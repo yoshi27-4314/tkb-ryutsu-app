@@ -462,6 +462,23 @@ body {
 }
 .mypage-header h3 { font-size: 20px; font-weight: 700; }
 .mypage-role { font-size: 13px; color: var(--sub); }
+/* ====== PROFILE CONTACTS ====== */
+.profile-contacts {
+  display: flex; gap: 12px; margin-top: 12px; padding: 0 8px;
+}
+.profile-contact-side {
+  flex: 1; background: var(--card); border-radius: 10px; padding: 10px 12px;
+  box-shadow: 0 1px 4px var(--shadow);
+}
+.profile-contact-label {
+  font-size: 10px; font-weight: 700; color: var(--gold); text-transform: uppercase;
+  letter-spacing: 1px; margin-bottom: 6px;
+}
+.profile-contact-item {
+  font-size: 11px; color: var(--text); padding: 2px 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 .theme-select { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
 .theme-btn {
   padding: 6px 16px; border-radius: 20px; border: 2px solid var(--border);

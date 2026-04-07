@@ -71,6 +71,7 @@ function showMainScreen() {
   startNotificationPolling();
   loadProfileImages();
   loadTheme();
+  loadContactInfo();
   initMiniClocks();
   const savedTab = localStorage.getItem('f8_current_tab');
   if (savedTab) switchTab(savedTab);
@@ -1748,6 +1749,18 @@ function showPopupNotification(title, body, id) {
 
   // 5秒後に自動で消える
   setTimeout(() => { if (popup.parentElement) popup.remove(); }, 5000);
+}
+
+// ====== 連絡先情報 ======
+function loadContactInfo() {
+  // LocalStorageから読み込み（管理者が設定）
+  const contacts = JSON.parse(localStorage.getItem('f8_contacts_' + currentUser.name) || 'null');
+  if (contacts) {
+    document.getElementById('privatePhone').textContent = contacts.privatePhone || '未登録';
+    document.getElementById('privateMail').textContent = contacts.privateMail || '未登録';
+    document.getElementById('companyPhone').textContent = contacts.companyPhone || '未登録';
+    document.getElementById('companyMail').textContent = contacts.companyMail || '未登録';
+  }
 }
 
 // ====== テーマ切り替え ======
