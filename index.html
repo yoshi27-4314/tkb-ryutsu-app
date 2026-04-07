@@ -6,7 +6,7 @@
 <title>ファーストエイト</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1C2541">
-<link rel="stylesheet" href="css/style.css?v=20260407k">
+<link rel="stylesheet" href="css/style.css?v=20260407m">
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -119,6 +119,18 @@
         <span class="camera-start-icon">📷</span>
         <span>撮影を開始する</span>
       </button>
+
+      <div class="quick-actions">
+        <button class="quick-btn" onclick="openReceiptModal()">
+          <span>🧾</span><span>経費精算</span>
+        </button>
+        <button class="quick-btn" onclick="showHelp()">
+          <span>❓</span><span>ヘルプ</span>
+        </button>
+        <button class="quick-btn" onclick="switchTab('stock')">
+          <span>🚚</span><span>出荷登録</span>
+        </button>
+      </div>
 
       <div class="section" style="margin-top:24px">
         <h3 class="section-title">📦 最近の商品</h3>
@@ -280,6 +292,108 @@
               <input type="file" id="trackingPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleTrackingPhoto(event)">
             </div>
             <button class="btn btn-primary" onclick="completeShipping()">🚚 出荷完了</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 経費精算モーダル -->
+    <div id="receiptOverlay" class="modal-overlay" onclick="closeReceiptModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 style="color:var(--text)">🧾 経費精算</h3>
+          <button class="modal-close" onclick="closeReceiptModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <!-- ステップ1: レシート撮影 -->
+          <div id="receiptStep1">
+            <p style="font-size:14px; color:var(--sub); margin-bottom:12px">レシートの写真を撮影してください。AIが自動で読み取ります。</p>
+            <div class="form-group">
+              <label>事業部</label>
+              <select id="receiptJigyoubu" class="search-input" style="width:100%">
+                <option value="テイクバック">テイクバック</option>
+                <option value="クリアメンテ">クリアメンテ</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="takeReceiptPhoto()">📷 レシートを撮影</button>
+            <input type="file" id="receiptPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptPhoto(event)">
+            <div id="receiptLoading" style="display:none; text-align:center; padding:20px; color:var(--sub)">
+              🤖 レシートを読み取り中...
+            </div>
+          </div>
+          <!-- ステップ2: OCR結果確認 -->
+          <div id="receiptStep2" style="display:none">
+            <div class="form-group">
+              <label>日付</label>
+              <input type="date" id="receiptDate" class="search-input" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label>支払先</label>
+              <input type="text" id="receiptShop" class="search-input" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label>金額（税込）</label>
+              <input type="number" id="receiptAmount" class="search-input" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label>勘定科目</label>
+              <select id="receiptCategory" class="search-input" style="width:100%">
+                <option value="消耗品費">消耗品費</option>
+                <option value="交通費">交通費</option>
+                <option value="通信費">通信費</option>
+                <option value="接待交際費">接待交際費</option>
+                <option value="雑費">雑費</option>
+                <option value="車両費">車両費</option>
+                <option value="燃料費">燃料費</option>
+                <option value="修繕費">修繕費</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>メモ</label>
+              <input type="text" id="receiptMemo" class="search-input" placeholder="任意" style="width:100%">
+            </div>
+            <button class="btn btn-primary" onclick="submitReceipt()">✅ 登録する</button>
+            <button class="btn btn-outline" onclick="closeReceiptModal()">キャンセル</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ヘルプモーダル -->
+    <div id="helpOverlay" class="modal-overlay" onclick="closeHelp()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 style="color:var(--text)">❓ ヘルプ</h3>
+          <button class="modal-close" onclick="closeHelp()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="help-section">
+            <h4>📷 商品登録</h4>
+            <p>ホームの「撮影を開始する」→ 写真を撮る → AIが自動判定 → 追加撮影 → 保管場所選択 → 完了</p>
+          </div>
+          <div class="help-section">
+            <h4>📱 バーコード登録（本）</h4>
+            <p>撮影タブ →「バーコードで登録」→ 本のバーコードにカメラを向ける → 自動読み取り → AI判定</p>
+          </div>
+          <div class="help-section">
+            <h4>🚚 出荷登録</h4>
+            <p>在庫タブ → 商品をタップ → 運送会社と追跡番号を入力 → 出荷完了</p>
+          </div>
+          <div class="help-section">
+            <h4>🧾 経費精算</h4>
+            <p>ホームの「経費精算」→ レシートを撮影 → AIが自動読み取り → 確認して登録</p>
+          </div>
+          <div class="help-section">
+            <h4>💬 チャット</h4>
+            <p>社内ルールの質問や、浅野さんへの相談ができます。</p>
+          </div>
+          <div class="help-section">
+            <h4>🕐 出退勤</h4>
+            <p>マイページ → 出勤・退勤時刻を入力 → 送信</p>
+          </div>
+          <div class="help-section">
+            <h4>🔍 在庫検索</h4>
+            <p>在庫タブ → 管理番号やキーワードで検索</p>
           </div>
         </div>
       </div>
@@ -576,7 +690,7 @@
 
 </div>
 
-<script src="js/config.js?v=20260407k"></script>
-<script src="js/app.js?v=20260407k"></script>
+<script src="js/config.js?v=20260407m"></script>
+<script src="js/app.js?v=20260407m"></script>
 </body>
 </html>

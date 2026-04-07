@@ -766,9 +766,16 @@ async function chatWithAI(msg) {
       }),
     });
 
-    // チャット用のEdge Functionがないので、ひとまずローカル応答
+    const result = await response.json();
     removeChatMessage('thinking');
-    addChatMessage('チャット機能は準備中です。業務についての質問は浅野さんに相談してください。', 'bot');
+
+    if (result.success && result.judgment) {
+      addChatMessage(typeof result.judgment === 'string' ? result.judgment : JSON.stringify(result.judgment), 'bot');
+    } else if (result.raw) {
+      addChatMessage(result.raw, 'bot');
+    } else {
+      addChatMessage('すみません、回答できませんでした。浅野さんに相談してください。', 'bot');
+    }
   } catch (err) {
     removeChatMessage('thinking');
     addChatMessage('通信エラーが発生しました。', 'bot');
@@ -1045,6 +1052,119 @@ function searchStock() {
     });
     list.innerHTML = html;
   }
+}
+
+// ====== 経費精算 ======
+function openReceiptModal() {
+  document.getElementById('receiptOverlay').classList.add('open');
+  document.getElementById('receiptStep1').style.display = 'block';
+  document.getElementById('receiptStep2').style.display = 'none';
+  document.getElementById('receiptLoading').style.display = 'none';
+}
+
+function closeReceiptModal() {
+  document.getElementById('receiptOverlay').classList.remove('open');
+}
+
+function takeReceiptPhoto() {
+  document.getElementById('receiptPhotoInput').click();
+}
+
+async function handleReceiptPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  document.getElementById('receiptLoading').style.display = 'block';
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    compressImage(e.target.result, 1200, 0.8, async (compressed) => {
+      try {
+        // Claude VisionでレシートOCR
+        const response = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/takeback-judge', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': CONFIG.SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            image: compressed,
+            step: 'receipt',
+            context: { task: 'このレシート/領収書から以下の情報をJSON形式で読み取ってください: {"date":"YYYY-MM-DD","shop":"店舗名","amount":金額数値,"tax":"10%or8%orなし","category":"勘定科目推定","memo":"品目"}' },
+          }),
+        });
+        const result = await response.json();
+        document.getElementById('receiptLoading').style.display = 'none';
+
+        if (result.success && result.judgment) {
+          const r = result.judgment;
+          document.getElementById('receiptDate').value = r.date || new Date().toISOString().slice(0, 10);
+          document.getElementById('receiptShop').value = r.shop || '';
+          document.getElementById('receiptAmount').value = r.amount || '';
+          document.getElementById('receiptMemo').value = r.memo || '';
+          if (r.category) {
+            const sel = document.getElementById('receiptCategory');
+            for (let opt of sel.options) {
+              if (opt.value.includes(r.category) || r.category.includes(opt.value)) {
+                sel.value = opt.value; break;
+              }
+            }
+          }
+          document.getElementById('receiptStep1').style.display = 'none';
+          document.getElementById('receiptStep2').style.display = 'block';
+        } else {
+          showToast('読み取れませんでした。手入力してください。');
+          document.getElementById('receiptStep1').style.display = 'none';
+          document.getElementById('receiptStep2').style.display = 'block';
+        }
+      } catch (err) {
+        console.error('Receipt OCR error:', err);
+        document.getElementById('receiptLoading').style.display = 'none';
+        showToast('読み取りエラー。手入力してください。');
+        document.getElementById('receiptStep1').style.display = 'none';
+        document.getElementById('receiptStep2').style.display = 'block';
+      }
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitReceipt() {
+  const jigyoubu = document.getElementById('receiptJigyoubu').value;
+  const date = document.getElementById('receiptDate').value;
+  const shop = document.getElementById('receiptShop').value;
+  const amount = document.getElementById('receiptAmount').value;
+  const category = document.getElementById('receiptCategory').value;
+  const memo = document.getElementById('receiptMemo').value;
+
+  if (!date || !shop || !amount) {
+    showToast('日付・支払先・金額は必須です');
+    return;
+  }
+
+  sendToGAS({
+    action: 'keihi',
+    jigyoubu: jigyoubu,
+    date: date,
+    shop_name: shop,
+    amount: amount,
+    category: category,
+    memo: memo,
+    staff_id: currentUser.name,
+    timestamp: formatTimestamp(),
+  });
+
+  showToast('🧾 経費精算を登録しました');
+  closeReceiptModal();
+}
+
+// ====== ヘルプ ======
+function showHelp() {
+  document.getElementById('helpOverlay').classList.add('open');
+}
+
+function closeHelp() {
+  document.getElementById('helpOverlay').classList.remove('open');
 }
 
 // ====== 通知 ======

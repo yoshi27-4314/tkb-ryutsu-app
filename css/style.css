@@ -199,6 +199,25 @@ body {
   text-align: center; padding: 40px 20px; color: var(--sub); font-size: 14px;
 }
 
+/* ====== QUICK ACTIONS ====== */
+.quick-actions {
+  display: flex; gap: 10px; margin-top: 12px; margin-bottom: 20px;
+}
+.quick-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 14px 8px; border-radius: 12px; border: 2px solid var(--border);
+  background: var(--card); font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit; color: var(--text);
+  transition: all 0.2s; box-shadow: 0 1px 4px var(--shadow);
+}
+.quick-btn:active { background: var(--border); }
+.quick-btn span:first-child { font-size: 22px; }
+
+/* ====== HELP ====== */
+.help-section { margin-bottom: 16px; }
+.help-section h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+.help-section p { font-size: 13px; color: var(--sub); line-height: 1.6; }
+
 /* ====== PRODUCT CARDS (HOME) ====== */
 .product-card {
   background: var(--card); border-radius: 14px; overflow: hidden;
