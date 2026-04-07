@@ -61,10 +61,13 @@ function showMainScreen() {
   const firstName = currentUser.name.split(/[　 ]/)[0];
   document.getElementById('staffName').textContent = firstName;
   document.getElementById('mypageName').textContent = currentUser.name;
-  // イニシャル設定（写真未設定時）
+  // 下の名前をアバターに表示（写真未設定時）
   const avatarEmoji = document.getElementById('avatarEmoji');
   if (avatarEmoji && !localStorage.getItem('f8_avatar')) {
-    avatarEmoji.textContent = firstName.charAt(0);
+    // 姓名を分割して下の名前を取得
+    const nameParts = currentUser.name.split(/[　 ]/);
+    const givenName = nameParts.length > 1 ? nameParts[1] : nameParts[0];
+    avatarEmoji.textContent = givenName;
   }
   if (currentUser.isAdmin) {
     document.getElementById('notifBadge').style.display = 'flex';
