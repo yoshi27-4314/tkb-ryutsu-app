@@ -488,14 +488,12 @@ body {
 .attendance-row { display: flex; gap: 12px; margin-bottom: 12px; }
 
 /* ====== CLOCK PICKER ====== */
-.clock-picker-group { flex: 1; text-align: center; }
-.clock-picker-group label { font-size: 13px; color: var(--sub); display: block; margin-bottom: 6px; }
-.clock-picker {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  cursor: pointer; padding: 8px; border-radius: 12px;
-  background: var(--card); box-shadow: 0 1px 4px var(--shadow);
+.time-input {
+  width: 100%; padding: 12px 14px; border-radius: 10px; border: 2px solid var(--border);
+  font-size: 20px; font-weight: 700; color: var(--gold); text-align: center;
+  background: var(--card); cursor: pointer; font-family: inherit;
 }
-.clock-time { font-size: 20px; font-weight: 700; color: var(--gold); }
+.time-input:active { border-color: var(--gold); }
 .clock-display { font-size: 40px; font-weight: 700; color: var(--gold); margin-bottom: 12px; letter-spacing: 2px; }
 .clock-face-container { display: flex; justify-content: center; }
 .clock-mode-toggle { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }

@@ -6,7 +6,7 @@
 <title>テイクバック 流通事業部</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1C2541">
-<link rel="stylesheet" href="css/style.css?v=20260408j">
+<link rel="stylesheet" href="css/style.css?v=20260408k">
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -741,20 +741,14 @@
         </div>
         <div class="attendance-form">
           <div class="attendance-row">
-            <div class="clock-picker-group">
+            <div class="form-group" style="flex:1">
               <label>出勤</label>
-              <div class="clock-picker" id="clockStart" onclick="openClockPicker('start')">
-                <canvas id="clockCanvasStart" width="120" height="120"></canvas>
-                <div class="clock-time" id="clockTimeStart">09:00</div>
-              </div>
+              <div class="time-input" id="attendStartDisplay" onclick="openClockPicker('start')">09:00</div>
               <input type="hidden" id="attendStart" value="09:00">
             </div>
-            <div class="clock-picker-group">
+            <div class="form-group" style="flex:1">
               <label>退勤</label>
-              <div class="clock-picker" id="clockEnd" onclick="openClockPicker('end')">
-                <canvas id="clockCanvasEnd" width="120" height="120"></canvas>
-                <div class="clock-time" id="clockTimeEnd">18:00</div>
-              </div>
+              <div class="time-input" id="attendEndDisplay" onclick="openClockPicker('end')">18:00</div>
               <input type="hidden" id="attendEnd" value="18:00">
             </div>
           </div>
@@ -822,7 +816,7 @@
 
 </div>
 
-<script src="js/config.js?v=20260408j"></script>
-<script src="js/app.js?v=20260408j"></script>
+<script src="js/config.js?v=20260408k"></script>
+<script src="js/app.js?v=20260408k"></script>
 </body>
 </html>

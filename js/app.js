@@ -1047,8 +1047,10 @@ function checkTodayAttendance() {
         msg.classList.add('recorded');
         document.getElementById('attendStart').value = a.start;
         document.getElementById('attendEnd').value = a.end;
-        document.getElementById('attendStart').disabled = true;
-        document.getElementById('attendEnd').disabled = true;
+        const startDisp = document.getElementById('attendStartDisplay');
+        const endDisp = document.getElementById('attendEndDisplay');
+        if (startDisp) { startDisp.textContent = a.start; startDisp.onclick = null; startDisp.style.opacity = '0.6'; }
+        if (endDisp) { endDisp.textContent = a.end; endDisp.onclick = null; endDisp.style.opacity = '0.6'; }
         // 送信ボタンを修正依頼ボタンに差し替え
         const submitBtn = document.querySelector('[onclick="submitAttendance()"]');
         if (submitBtn) {
@@ -1273,19 +1275,16 @@ function applyClockPicker() {
   const str = String(clockHour).padStart(2, '0') + ':' + String(clockMin).padStart(2, '0');
   if (clockTarget === 'start') {
     document.getElementById('attendStart').value = str;
-    document.getElementById('clockTimeStart').textContent = str;
-    drawMiniClock('clockCanvasStart', clockHour, clockMin);
+    document.getElementById('attendStartDisplay').textContent = str;
   } else {
     document.getElementById('attendEnd').value = str;
-    document.getElementById('clockTimeEnd').textContent = str;
-    drawMiniClock('clockCanvasEnd', clockHour, clockMin);
+    document.getElementById('attendEndDisplay').textContent = str;
   }
   closeClockPicker();
 }
 
 function initMiniClocks() {
-  drawMiniClock('clockCanvasStart', 9, 0);
-  drawMiniClock('clockCanvasEnd', 18, 0);
+  // 時間入力カラム方式に変更。ミニ時計は不要
 }
 
 function toggleAttendanceHistory() {
