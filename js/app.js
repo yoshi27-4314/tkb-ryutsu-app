@@ -1065,7 +1065,7 @@ function checkTodayAttendance() {
         // 送信ボタンを修正依頼ボタンに差し替え
         const submitBtn = document.querySelector('[onclick="submitAttendance()"]');
         if (submitBtn) {
-          submitBtn.textContent = '📝 修正を依頼する（浅野さんに連絡）';
+          submitBtn.textContent = '修正を依頼・相談';
           submitBtn.onclick = requestAttendanceCorrection;
           submitBtn.className = 'btn btn-outline';
         }
