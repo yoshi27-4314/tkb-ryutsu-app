@@ -117,6 +117,7 @@ body {
 .stat-card {
   background: var(--card); border-radius: 12px; padding: 16px;
   text-align: center; box-shadow: 0 2px 8px var(--shadow);
+  border-left: 3px solid var(--gold);
 }
 .stat-number { font-size: 28px; font-weight: 700; color: var(--gold); }
 .stat-label { font-size: 13px; color: var(--sub); margin-top: 4px; }
@@ -133,7 +134,9 @@ body {
   white-space: nowrap;
 }
 .notice-approve { background: #e6f4ec; color: var(--success); }
+.notice-danger { background: #fde8e8; color: var(--danger); }
 .notice-wait { background: #fef6e0; color: #8a7020; }
+.notice-gold { background: #faf3e0; color: #8a6d20; }
 .notice-info { background: #e8edf2; color: var(--primary); }
 
 /* ====== CAMERA START BTN ====== */
@@ -176,6 +179,41 @@ body {
 .status-listed { background: #e8edf2; color: var(--primary); }
 .stock-name { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
 .stock-meta { font-size: 12px; color: var(--sub); }
+
+/* ====== PRODUCT CARDS (HOME) ====== */
+.product-card {
+  background: var(--card); border-radius: 14px; overflow: hidden;
+  box-shadow: 0 2px 10px var(--shadow); margin-bottom: 12px;
+}
+.product-img-area {
+  height: 150px; background: #e8dcc8;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.product-emoji { font-size: 48px; }
+.product-channel-tag {
+  position: absolute; top: 10px; left: 10px;
+  background: var(--danger); color: #fff; padding: 3px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 700;
+}
+.product-channel-tag.tag-green { background: var(--accent); }
+.product-channel-tag.tag-gold { background: var(--gold); }
+.product-price-tag {
+  position: absolute; bottom: 10px; right: 10px;
+  background: rgba(28,37,65,0.85); color: var(--gold); padding: 4px 12px; border-radius: 8px;
+  font-size: 14px; font-weight: 700;
+}
+.product-info { padding: 12px 14px; }
+.product-number-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.product-number { font-size: 12px; font-weight: 700; color: var(--gold); font-family: monospace; }
+.product-status {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+}
+.product-status-red { background: #fde8e8; color: var(--danger); }
+.product-status-green { background: #e6f4ec; color: var(--accent); }
+.product-status-gold { background: #faf3e0; color: #8a6d20; }
+.product-name { font-size: 15px; font-weight: 500; color: var(--text); }
+.product-meta { font-size: 12px; color: var(--sub); margin-top: 4px; }
 
 /* ====== CAMERA FLOW ====== */
 .camera-step { display: none; }

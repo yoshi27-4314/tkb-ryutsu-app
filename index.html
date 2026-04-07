@@ -6,7 +6,7 @@
 <title>ファーストエイト</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1C2541">
-<link rel="stylesheet" href="css/style.css?v=20260407e">
+<link rel="stylesheet" href="css/style.css?v=20260407f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -74,19 +74,19 @@
         <h3 class="section-title">📊 今日の作業</h3>
         <div class="stat-grid">
           <div class="stat-card">
-            <div class="stat-number" id="statBunka">0</div>
+            <div class="stat-number" id="statBunka">12</div>
             <div class="stat-label">分荷判定</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number" id="statSatsuei">0</div>
+            <div class="stat-number" id="statSatsuei">28</div>
             <div class="stat-label">撮影</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number" id="statShuppin">0</div>
+            <div class="stat-number" id="statShuppin">5</div>
             <div class="stat-label">出品</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number" id="statKonpo">0</div>
+            <div class="stat-number" id="statKonpo">3</div>
             <div class="stat-label">梱包</div>
           </div>
         </div>
@@ -96,12 +96,16 @@
         <h3 class="section-title">📋 お知らせ</h3>
         <div class="notice-list" id="noticeList">
           <div class="notice-item">
-            <span class="notice-badge notice-approve">承認済</span>
-            <span>管理番号 2604-0023 が承認されました</span>
+            <span class="notice-badge notice-danger">承認待ち</span>
+            <span>高額品 2604-0031 ¥45,000 浅野さん確認中</span>
           </div>
           <div class="notice-item">
-            <span class="notice-badge notice-wait">相談中</span>
-            <span>高額品 3件が浅野さん確認待ちです</span>
+            <span class="notice-badge notice-approve">承認済</span>
+            <span>2604-0029 ヤフオクビンテージで出品OK</span>
+          </div>
+          <div class="notice-item">
+            <span class="notice-badge notice-gold">落札</span>
+            <span>2604-0022 ¥18,500で落札されました 🎉</span>
           </div>
           <div class="notice-item">
             <span class="notice-badge notice-info">連絡</span>
@@ -114,6 +118,55 @@
         <span class="camera-start-icon">📷</span>
         <span>撮影を開始する</span>
       </button>
+
+      <div class="section" style="margin-top:24px">
+        <h3 class="section-title">📦 最近の商品</h3>
+        <div class="product-card">
+          <div class="product-img-area">
+            <span class="product-emoji">🏺</span>
+            <span class="product-channel-tag">ヤフオクビンテージ</span>
+            <span class="product-price-tag">¥18,000</span>
+          </div>
+          <div class="product-info">
+            <div class="product-number-row">
+              <span class="product-number">2604-0031</span>
+              <span class="product-status product-status-red">承認待ち</span>
+            </div>
+            <div class="product-name">アンティーク 真鍮テーブルランプ</div>
+            <div class="product-meta">分荷: 桃井侑菜 ・ 保管: A-2</div>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-img-area">
+            <span class="product-emoji">📻</span>
+            <span class="product-channel-tag tag-green">ヤフオク現行</span>
+            <span class="product-price-tag">¥4,500</span>
+          </div>
+          <div class="product-info">
+            <div class="product-number-row">
+              <span class="product-number">2604-0030</span>
+              <span class="product-status product-status-green">出品中</span>
+            </div>
+            <div class="product-name">SONY トランジスタラジオ ICF-506</div>
+            <div class="product-meta">分荷: 横山優 ・ 保管: B-1</div>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-img-area">
+            <span class="product-emoji">🏠</span>
+            <span class="product-channel-tag tag-gold">ヤフオクまとめ</span>
+            <span class="product-price-tag">¥3,200</span>
+          </div>
+          <div class="product-info">
+            <div class="product-number-row">
+              <span class="product-number">2604-0029</span>
+              <span class="product-status product-status-gold">撮影待ち</span>
+            </div>
+            <div class="product-name">昭和レトロ ガラス花瓶 3点セット</div>
+            <div class="product-meta">分荷: 平野光雄 ・ 保管: C-1</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 在庫タブ -->
@@ -353,6 +406,6 @@
 
 </div>
 
-<script src="js/app.js?v=20260407b"></script>
+<script src="js/app.js?v=20260407f"></script>
 </body>
 </html>
