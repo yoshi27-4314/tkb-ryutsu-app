@@ -71,6 +71,8 @@ function showMainScreen() {
   startNotificationPolling();
   loadProfileImages();
   initMiniClocks();
+  const savedTab = localStorage.getItem('f8_current_tab');
+  if (savedTab) switchTab(savedTab);
 }
 
 // 自動ログイン
@@ -89,6 +91,7 @@ function tryAutoLogin() {
 // ====== タブ切り替え ======
 function switchTab(tab) {
   currentTab = tab;
+  localStorage.setItem('f8_current_tab', tab);
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(el => {
