@@ -449,6 +449,12 @@ body {
   cursor: pointer; overflow: hidden;
 }
 .avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.avatar-initial {
+  font-size: 28px; font-weight: 700; color: #fff;
+  width: 100%; height: 100%; display: flex;
+  align-items: center; justify-content: center;
+  background: var(--gold); border-radius: 50%;
+}
 .avatar-area { position: relative; display: inline-block; margin: -36px auto 8px; }
 .theme-icon-btn {
   position: absolute; top: 8px; left: 8px; z-index: 2;
@@ -500,19 +506,19 @@ body {
 
 /* ====== FEMALE THEME ====== */
 body[data-theme="female"] {
-  --primary: #8B6B61;
-  --accent: #D4917A;
-  --gold: #D4917A;
-  --red: #E88B9A;
-  --bg: #FDF6F3;
+  --primary: #E8709A;
+  --accent: #E8709A;
+  --gold: #F0A0C0;
+  --red: #FF6B8A;
+  --bg: #FFF5F8;
   --card: #ffffff;
-  --text: #5A4A45;
-  --sub: #9A8A85;
-  --border: #EDE4E0;
-  --shadow: rgba(90,74,69,0.06);
-  --success: #7BAF8A;
-  --warn: #D4A96A;
-  --danger: #E88B9A;
+  --text: #5A3A4A;
+  --sub: #B08898;
+  --border: #F4DDE6;
+  --shadow: rgba(232,112,154,0.08);
+  --success: #6BBF8A;
+  --warn: #F0C060;
+  --danger: #FF6B8A;
   font-family: 'Zen Maru Gothic', sans-serif;
 }
 

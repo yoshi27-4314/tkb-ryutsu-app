@@ -61,6 +61,11 @@ function showMainScreen() {
   const firstName = currentUser.name.split(/[　 ]/)[0];
   document.getElementById('staffName').textContent = firstName;
   document.getElementById('mypageName').textContent = currentUser.name;
+  // イニシャル設定（写真未設定時）
+  const avatarEmoji = document.getElementById('avatarEmoji');
+  if (avatarEmoji && !localStorage.getItem('f8_avatar')) {
+    avatarEmoji.textContent = firstName.charAt(0);
+  }
   if (currentUser.isAdmin) {
     document.getElementById('notifBadge').style.display = 'flex';
   }
