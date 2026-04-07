@@ -1291,11 +1291,16 @@ function initMiniClocks() {
   // 時間入力カラム方式に変更。ミニ時計は不要
 }
 
+let attendHistoryYear, attendHistoryMonth;
+
 function toggleAttendanceHistory() {
   const el = document.getElementById('attendanceHistory');
   if (el.style.display === 'none') {
     el.style.display = 'block';
     document.getElementById('attendHistoryBtn').textContent = '📅 出勤状況を閉じる';
+    const now = new Date();
+    attendHistoryYear = now.getFullYear();
+    attendHistoryMonth = now.getMonth();
     renderAttendanceHistory();
   } else {
     el.style.display = 'none';
@@ -1303,18 +1308,38 @@ function toggleAttendanceHistory() {
   }
 }
 
+function changeAttendMonth(dir) {
+  attendHistoryMonth += dir;
+  if (attendHistoryMonth < 0) { attendHistoryMonth = 11; attendHistoryYear--; }
+  if (attendHistoryMonth > 11) { attendHistoryMonth = 0; attendHistoryYear++; }
+  // 未来月には進めない
+  const now = new Date();
+  if (attendHistoryYear > now.getFullYear() || (attendHistoryYear === now.getFullYear() && attendHistoryMonth > now.getMonth())) {
+    attendHistoryMonth = now.getMonth();
+    attendHistoryYear = now.getFullYear();
+    return;
+  }
+  renderAttendanceHistory();
+}
+
 function renderAttendanceHistory() {
   const el = document.getElementById('attendanceHistory');
+  const year = attendHistoryYear;
+  const month = attendHistoryMonth;
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const days = ['日','月','火','水','木','金','土'];
+  const isCurrentMonth = (year === now.getFullYear() && month === now.getMonth());
 
   let totalDays = 0;
   let totalHours = 0;
+
   let html = `<div class="attend-history-card">
-    <h4 style="font-size:14px; font-weight:700; margin-bottom:12px;">${year}年${month + 1}月の出勤状況</h4>
+    <div class="attend-month-nav">
+      <button class="attend-nav-btn" onclick="changeAttendMonth(-1)">◀</button>
+      <h4 class="attend-month-title">${year}年${month + 1}月</h4>
+      <button class="attend-nav-btn ${isCurrentMonth ? 'disabled' : ''}" onclick="changeAttendMonth(1)" ${isCurrentMonth ? 'disabled' : ''}>▶</button>
+    </div>
     <div class="attend-calendar">`;
 
   for (let d = 1; d <= daysInMonth; d++) {
@@ -1322,6 +1347,7 @@ function renderAttendanceHistory() {
     const dateStr = date.toISOString().slice(0, 10);
     const dayName = days[date.getDay()];
     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const isFuture = date > now;
     const saved = localStorage.getItem('f8_attendance_' + dateStr);
 
     let status = '';
@@ -1337,23 +1363,23 @@ function renderAttendanceHistory() {
         totalHours += parseFloat(a.netHours);
         rowClass += ' attend-day-worked';
       } catch {}
-    } else if (date <= now) {
+    } else if (!isFuture) {
       if (isWeekend) {
         status = '—';
         rowClass += ' attend-day-off';
-      } else if (d <= now.getDate()) {
+      } else {
         status = '未登録';
         rowClass += ' attend-day-missing';
       }
+    } else {
+      continue;
     }
 
-    if (d <= now.getDate() || saved) {
-      html += `<div class="${rowClass}">
-        <span class="attend-date">${d}日（${dayName}）</span>
-        <span class="attend-time">${status}</span>
-        <span class="attend-hours">${hours}</span>
-      </div>`;
-    }
+    html += `<div class="${rowClass}">
+      <span class="attend-date">${d}日（${dayName}）</span>
+      <span class="attend-time">${status}</span>
+      <span class="attend-hours">${hours}</span>
+    </div>`;
   }
 
   html += `</div>
