@@ -6,7 +6,7 @@
 <title>テイクバック 流通事業部</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1C2541">
-<link rel="stylesheet" href="css/style.css?v=20260408s">
+<link rel="stylesheet" href="css/style.css?v=20260408t">
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -675,11 +675,17 @@
     <!-- マイページタブ -->
     <div id="tab-mypage" class="tab-content">
       <div class="mypage-header" id="mypageHeader">
-        <div class="mypage-bg" id="mypageBg" onclick="changeBgImage()">
-          <div class="mypage-bg-hint">タップで背景変更</div>
+        <div class="mypage-bg" id="mypageBg" onclick="openBgMenu()">
+          <button class="theme-icon-btn" id="themeToggleBtn" onclick="event.stopPropagation(); toggleTheme()">🔵</button>
+        </div>
+        <!-- 背景メニュー -->
+        <div id="bgMenu" class="avatar-menu" style="display:none">
+          <button class="avatar-menu-item" onclick="changeBgImage(); closeBgMenu();">📷 背景を変更</button>
+          <button class="avatar-menu-item" onclick="editBgImage()">✂️ 背景を編集</button>
+          <button class="avatar-menu-item" onclick="deleteBgImage()" style="color:var(--danger)">🗑️ 背景を削除</button>
+          <button class="avatar-menu-item" onclick="closeBgMenu()" style="color:var(--sub)">キャンセル</button>
         </div>
         <div class="avatar-area">
-          <button class="theme-icon-btn" id="themeToggleBtn" onclick="toggleTheme()">🔵</button>
           <div class="mypage-avatar" id="mypageAvatar" onclick="openAvatarMenu()">
             <span id="avatarEmoji">👤</span>
             <img id="avatarImg" class="avatar-img" style="display:none">
@@ -839,7 +845,7 @@
 
 </div>
 
-<script src="js/config.js?v=20260408s"></script>
-<script src="js/app.js?v=20260408s"></script>
+<script src="js/config.js?v=20260408t"></script>
+<script src="js/app.js?v=20260408t"></script>
 </body>
 </html>

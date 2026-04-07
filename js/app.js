@@ -1813,6 +1813,29 @@ function editAvatarImage() {
   openCropModal(saved, 'avatar');
 }
 
+// ====== 背景メニュー ======
+function openBgMenu() {
+  document.getElementById('bgMenu').style.display = 'block';
+}
+
+function closeBgMenu() {
+  document.getElementById('bgMenu').style.display = 'none';
+}
+
+function editBgImage() {
+  closeBgMenu();
+  const saved = localStorage.getItem('f8_bg');
+  if (!saved) { showToast('背景が設定されていません'); return; }
+  openCropModal(saved, 'bg');
+}
+
+function deleteBgImage() {
+  closeBgMenu();
+  localStorage.removeItem('f8_bg');
+  document.getElementById('mypageBg').style.backgroundImage = 'none';
+  showToast('背景を削除しました');
+}
+
 function deleteAvatarImage() {
   closeAvatarMenu();
   localStorage.removeItem('f8_avatar');

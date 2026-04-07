@@ -441,11 +441,6 @@ body {
   background-size: cover; background-position: center;
   overflow: hidden;
 }
-.mypage-bg-hint {
-  position: absolute; bottom: 6px; right: 8px;
-  font-size: 10px; color: #fff; background: rgba(0,0,0,0.4);
-  padding: 2px 8px; border-radius: 4px;
-}
 .mypage-avatar {
   width: 72px; height: 72px; border-radius: 50%;
   background: var(--card); border: 3px solid var(--gold);
@@ -456,11 +451,11 @@ body {
 .avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .avatar-area { position: relative; display: inline-block; margin: -36px auto 8px; }
 .theme-icon-btn {
-  position: absolute; top: 0; left: -8px; z-index: 2;
+  position: absolute; top: 8px; left: 8px; z-index: 2;
   width: 32px; height: 32px; border-radius: 50%;
-  border: 2px solid var(--card); background: var(--card);
+  border: 2px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.9);
   font-size: 16px; cursor: pointer;
-  box-shadow: 0 2px 6px var(--shadow);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   display: flex; align-items: center; justify-content: center;
 }
 .avatar-menu {
