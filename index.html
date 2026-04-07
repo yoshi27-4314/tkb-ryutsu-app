@@ -6,7 +6,7 @@
 <title>テイクバック 流通事業部</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1C2541">
-<link rel="stylesheet" href="css/style.css?v=20260408h">
+<link rel="stylesheet" href="css/style.css?v=20260408i">
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -741,19 +741,51 @@
         </div>
         <div class="attendance-form">
           <div class="attendance-row">
-            <div class="form-group" style="flex:1">
+            <div class="clock-picker-group">
               <label>出勤</label>
-              <input type="time" id="attendStart" class="search-input" style="width:100%">
+              <div class="clock-picker" id="clockStart" onclick="openClockPicker('start')">
+                <canvas id="clockCanvasStart" width="120" height="120"></canvas>
+                <div class="clock-time" id="clockTimeStart">09:00</div>
+              </div>
+              <input type="hidden" id="attendStart" value="09:00">
             </div>
-            <div class="form-group" style="flex:1">
+            <div class="clock-picker-group">
               <label>退勤</label>
-              <input type="time" id="attendEnd" class="search-input" style="width:100%">
+              <div class="clock-picker" id="clockEnd" onclick="openClockPicker('end')">
+                <canvas id="clockCanvasEnd" width="120" height="120"></canvas>
+                <div class="clock-time" id="clockTimeEnd">18:00</div>
+              </div>
+              <input type="hidden" id="attendEnd" value="18:00">
             </div>
           </div>
           <button class="btn btn-primary" onclick="submitAttendance()">📝 勤務記録を送信</button>
           <button class="btn btn-outline" onclick="openAttendanceConsult()" style="font-size:13px; margin-top:8px">💬 勤怠について連絡・相談する</button>
           <button class="btn btn-outline" onclick="toggleAttendanceHistory()" style="font-size:13px; margin-top:8px" id="attendHistoryBtn">📅 今月の出勤状況を見る</button>
           <div id="attendanceHistory" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- 時計ピッカーモーダル -->
+      <div id="clockPickerOverlay" class="modal-overlay" onclick="closeClockPicker()">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width:340px">
+          <div class="modal-header">
+            <h3 id="clockPickerTitle" style="color:var(--text)">時刻を選択</h3>
+            <button class="modal-close" onclick="closeClockPicker()">✕</button>
+          </div>
+          <div class="modal-body" style="text-align:center">
+            <div class="clock-display" id="clockPickerDisplay">09:00</div>
+            <div class="clock-face-container">
+              <canvas id="clockPickerCanvas" width="260" height="260"></canvas>
+            </div>
+            <div class="clock-mode-toggle">
+              <button class="clock-mode-btn active" id="clockModeHour" onclick="setClockMode('hour')">時</button>
+              <button class="clock-mode-btn" id="clockModeMin" onclick="setClockMode('min')">分</button>
+            </div>
+            <div style="display:flex; gap:12px; margin-top:16px;">
+              <button class="btn btn-outline" onclick="closeClockPicker()" style="flex:1">キャンセル</button>
+              <button class="btn btn-primary" onclick="applyClockPicker()" style="flex:1">決定</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -790,7 +822,7 @@
 
 </div>
 
-<script src="js/config.js?v=20260408h"></script>
-<script src="js/app.js?v=20260408h"></script>
+<script src="js/config.js?v=20260408i"></script>
+<script src="js/app.js?v=20260408i"></script>
 </body>
 </html>

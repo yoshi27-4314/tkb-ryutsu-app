@@ -70,6 +70,7 @@ function showMainScreen() {
   checkTodayAttendance();
   startNotificationPolling();
   loadProfileImages();
+  initMiniClocks();
 }
 
 // 自動ログイン
@@ -1058,6 +1059,233 @@ function checkTodayAttendance() {
       }
     } catch {}
   }
+}
+
+// ====== アナログ時計ピッカー ======
+let clockTarget = 'start'; // 'start' or 'end'
+let clockMode = 'hour'; // 'hour' or 'min'
+let clockHour = 9;
+let clockMin = 0;
+
+function drawMiniClock(canvasId, hour, min) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height, cx = w/2, cy = h/2, r = Math.min(cx, cy) - 4;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // 文字盤
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.strokeStyle = '#dde0e6'; ctx.lineWidth = 2; ctx.stroke();
+
+  // 目盛り
+  for (let i = 0; i < 12; i++) {
+    const a = (i * 30 - 90) * Math.PI / 180;
+    const x1 = cx + Math.cos(a) * (r - 8), y1 = cy + Math.sin(a) * (r - 8);
+    const x2 = cx + Math.cos(a) * (r - 2), y2 = cy + Math.sin(a) * (r - 2);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  // 短針
+  const ha = ((hour % 12) * 30 + min * 0.5 - 90) * Math.PI / 180;
+  ctx.beginPath(); ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(ha) * (r * 0.5), cy + Math.sin(ha) * (r * 0.5));
+  ctx.strokeStyle = '#1C2541'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+
+  // 長針
+  const ma = (min * 6 - 90) * Math.PI / 180;
+  ctx.beginPath(); ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(ma) * (r * 0.7), cy + Math.sin(ma) * (r * 0.7));
+  ctx.strokeStyle = '#C5A258'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke();
+
+  // 中心
+  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#C5A258'; ctx.fill();
+}
+
+function openClockPicker(target) {
+  clockTarget = target;
+  const current = document.getElementById(target === 'start' ? 'attendStart' : 'attendEnd').value || '09:00';
+  const [h, m] = current.split(':').map(Number);
+  clockHour = h; clockMin = m;
+  clockMode = 'hour';
+
+  document.getElementById('clockPickerTitle').textContent = target === 'start' ? '出勤時刻' : '退勤時刻';
+  updateClockPickerDisplay();
+  drawClockPickerFace();
+  document.getElementById('clockModeHour').classList.add('active');
+  document.getElementById('clockModeMin').classList.remove('active');
+  document.getElementById('clockPickerOverlay').classList.add('open');
+}
+
+function closeClockPicker() {
+  document.getElementById('clockPickerOverlay').classList.remove('open');
+}
+
+function setClockMode(mode) {
+  clockMode = mode;
+  document.getElementById('clockModeHour').classList.toggle('active', mode === 'hour');
+  document.getElementById('clockModeMin').classList.toggle('active', mode === 'min');
+  drawClockPickerFace();
+}
+
+function updateClockPickerDisplay() {
+  const str = String(clockHour).padStart(2, '0') + ':' + String(clockMin).padStart(2, '0');
+  document.getElementById('clockPickerDisplay').textContent = str;
+}
+
+function drawClockPickerFace() {
+  const canvas = document.getElementById('clockPickerCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height, cx = w/2, cy = h/2, r = 115;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // 背景
+  ctx.beginPath(); ctx.arc(cx, cy, r + 10, 0, Math.PI * 2);
+  ctx.fillStyle = '#F8F5EE'; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.strokeStyle = '#dde0e6'; ctx.lineWidth = 2; ctx.stroke();
+
+  if (clockMode === 'hour') {
+    // 時の数字（1-12）
+    for (let i = 1; i <= 12; i++) {
+      const a = (i * 30 - 90) * Math.PI / 180;
+      const x = cx + Math.cos(a) * (r - 25);
+      const y = cy + Math.sin(a) * (r - 25);
+      const isSelected = (clockHour % 12 === i % 12);
+      if (isSelected) {
+        ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2);
+        ctx.fillStyle = '#C5A258'; ctx.fill();
+      }
+      ctx.font = isSelected ? 'bold 16px sans-serif' : '14px sans-serif';
+      ctx.fillStyle = isSelected ? '#fff' : '#1C2541';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(i), x, y);
+    }
+    // PM表示（13-24の内側リング）
+    for (let i = 13; i <= 24; i++) {
+      const a = ((i - 12) * 30 - 90) * Math.PI / 180;
+      const x = cx + Math.cos(a) * (r - 55);
+      const y = cy + Math.sin(a) * (r - 55);
+      const displayNum = i === 24 ? 0 : i;
+      const isSelected = (clockHour === displayNum || (clockHour === 0 && i === 24));
+      if (isSelected) {
+        ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2);
+        ctx.fillStyle = '#1C2541'; ctx.fill();
+      }
+      ctx.font = isSelected ? 'bold 13px sans-serif' : '12px sans-serif';
+      ctx.fillStyle = isSelected ? '#fff' : '#888';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(displayNum), x, y);
+    }
+    // 針
+    const selectedA = (clockHour % 12 * 30 - 90) * Math.PI / 180;
+    const needleR = clockHour >= 13 || clockHour === 0 ? r - 55 : r - 25;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(selectedA) * needleR, cy + Math.sin(selectedA) * needleR);
+    ctx.strokeStyle = '#C5A258'; ctx.lineWidth = 2; ctx.stroke();
+  } else {
+    // 分の数字（0, 5, 10, 15...55）
+    for (let i = 0; i < 12; i++) {
+      const minVal = i * 5;
+      const a = (i * 30 - 90) * Math.PI / 180;
+      const x = cx + Math.cos(a) * (r - 25);
+      const y = cy + Math.sin(a) * (r - 25);
+      const isSelected = (clockMin === minVal);
+      if (isSelected) {
+        ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2);
+        ctx.fillStyle = '#C5A258'; ctx.fill();
+      }
+      ctx.font = isSelected ? 'bold 16px sans-serif' : '14px sans-serif';
+      ctx.fillStyle = isSelected ? '#fff' : '#1C2541';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(minVal).padStart(2, '0'), x, y);
+    }
+    // 針
+    const selectedA = (clockMin * 6 - 90) * Math.PI / 180;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(selectedA) * (r - 25), cy + Math.sin(selectedA) * (r - 25));
+    ctx.strokeStyle = '#C5A258'; ctx.lineWidth = 2; ctx.stroke();
+  }
+
+  // 中心点
+  ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#C5A258'; ctx.fill();
+}
+
+// 時計ピッカーのタップ操作
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('clockPickerCanvas');
+  if (canvas) {
+    canvas.addEventListener('click', handleClockTap);
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      handleClockTapAt(touch.clientX - rect.left, touch.clientY - rect.top);
+    }, { passive: false });
+  }
+});
+
+function handleClockTap(e) {
+  const rect = e.target.getBoundingClientRect();
+  handleClockTapAt(e.clientX - rect.left, e.clientY - rect.top);
+}
+
+function handleClockTapAt(x, y) {
+  const cx = 130, cy = 130;
+  const dx = x - cx, dy = y - cy;
+  let angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+  if (angle < 0) angle += 360;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  if (clockMode === 'hour') {
+    let h = Math.round(angle / 30);
+    if (h === 0) h = 12;
+    if (dist < 70) {
+      // 内側リング（13-24）
+      h = h === 12 ? 0 : h + 12;
+    }
+    clockHour = h;
+    updateClockPickerDisplay();
+    drawClockPickerFace();
+    // 自動で分モードに切り替え
+    setTimeout(() => setClockMode('min'), 300);
+  } else {
+    let m = Math.round(angle / 6);
+    if (m === 60) m = 0;
+    // 5分刻みにスナップ
+    m = Math.round(m / 5) * 5;
+    if (m === 60) m = 0;
+    clockMin = m;
+    updateClockPickerDisplay();
+    drawClockPickerFace();
+  }
+}
+
+function applyClockPicker() {
+  const str = String(clockHour).padStart(2, '0') + ':' + String(clockMin).padStart(2, '0');
+  if (clockTarget === 'start') {
+    document.getElementById('attendStart').value = str;
+    document.getElementById('clockTimeStart').textContent = str;
+    drawMiniClock('clockCanvasStart', clockHour, clockMin);
+  } else {
+    document.getElementById('attendEnd').value = str;
+    document.getElementById('clockTimeEnd').textContent = str;
+    drawMiniClock('clockCanvasEnd', clockHour, clockMin);
+  }
+  closeClockPicker();
+}
+
+function initMiniClocks() {
+  drawMiniClock('clockCanvasStart', 9, 0);
+  drawMiniClock('clockCanvasEnd', 18, 0);
 }
 
 function toggleAttendanceHistory() {
