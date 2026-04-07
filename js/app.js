@@ -1041,9 +1041,8 @@ function submitAttendance() {
   msg.textContent = `✅ ${start}〜${end}（実働${netHours}時間）記録済み`;
   msg.classList.add('recorded');
 
-  // 入力欄を無効化
-  document.getElementById('attendStart').disabled = true;
-  document.getElementById('attendEnd').disabled = true;
+  // 入力欄を隠す
+  document.querySelector('.attendance-form .attendance-row').style.display = 'none';
 
   showToast('🕐 勤務記録を送信しました');
 }
@@ -1060,10 +1059,9 @@ function checkTodayAttendance() {
         msg.classList.add('recorded');
         document.getElementById('attendStart').value = a.start;
         document.getElementById('attendEnd').value = a.end;
-        const startDisp = document.getElementById('attendStartDisplay');
-        const endDisp = document.getElementById('attendEndDisplay');
-        if (startDisp) { startDisp.textContent = a.start; startDisp.onclick = null; startDisp.style.opacity = '0.6'; }
-        if (endDisp) { endDisp.textContent = a.end; endDisp.onclick = null; endDisp.style.opacity = '0.6'; }
+        // 時間入力欄を隠す
+        const attendRow = document.querySelector('.attendance-form .attendance-row');
+        if (attendRow) attendRow.style.display = 'none';
         // 送信ボタンを修正依頼ボタンに差し替え
         const submitBtn = document.querySelector('[onclick="submitAttendance()"]');
         if (submitBtn) {
