@@ -502,6 +502,7 @@ body[data-theme="female"] {
   --success: #7BAF8A;
   --warn: #D4A96A;
   --danger: #E88B9A;
+  font-family: 'Zen Maru Gothic', sans-serif;
 }
 
 /* ====== CROP ====== */
