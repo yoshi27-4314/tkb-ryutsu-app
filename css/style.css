@@ -462,6 +462,30 @@ body {
 }
 .mypage-header h3 { font-size: 20px; font-weight: 700; }
 .mypage-role { font-size: 13px; color: var(--sub); }
+.theme-select { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+.theme-btn {
+  padding: 6px 16px; border-radius: 20px; border: 2px solid var(--border);
+  background: var(--card); font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit; color: var(--sub); transition: all 0.2s;
+}
+.theme-btn.active { border-color: var(--gold); color: var(--gold); font-weight: 700; }
+
+/* ====== FEMALE THEME ====== */
+body[data-theme="female"] {
+  --primary: #8B6B61;
+  --accent: #D4917A;
+  --gold: #D4917A;
+  --red: #E88B9A;
+  --bg: #FDF6F3;
+  --card: #ffffff;
+  --text: #5A4A45;
+  --sub: #9A8A85;
+  --border: #EDE4E0;
+  --shadow: rgba(90,74,69,0.06);
+  --success: #7BAF8A;
+  --warn: #D4A96A;
+  --danger: #E88B9A;
+}
 
 /* ====== CROP ====== */
 .crop-container {

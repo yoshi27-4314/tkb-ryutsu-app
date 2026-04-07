@@ -70,6 +70,7 @@ function showMainScreen() {
   checkTodayAttendance();
   startNotificationPolling();
   loadProfileImages();
+  loadTheme();
   initMiniClocks();
   const savedTab = localStorage.getItem('f8_current_tab');
   if (savedTab) switchTab(savedTab);
@@ -1721,6 +1722,23 @@ function showPopupNotification(title, body, id) {
 
   // 5秒後に自動で消える
   setTimeout(() => { if (popup.parentElement) popup.remove(); }, 5000);
+}
+
+// ====== テーマ切り替え ======
+function setTheme(theme) {
+  if (theme === 'female') {
+    document.body.setAttribute('data-theme', 'female');
+  } else {
+    document.body.removeAttribute('data-theme');
+  }
+  localStorage.setItem('f8_theme', theme);
+  document.getElementById('themeMale').classList.toggle('active', theme === 'male');
+  document.getElementById('themeFemale').classList.toggle('active', theme === 'female');
+}
+
+function loadTheme() {
+  const saved = localStorage.getItem('f8_theme') || 'male';
+  setTheme(saved);
 }
 
 // ====== プロフィール画像 ======
