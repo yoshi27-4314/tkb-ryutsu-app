@@ -416,6 +416,11 @@ body {
   background: transparent; color: var(--accent); font-size: 14px;
   font-weight: 700; cursor: pointer; font-family: inherit; margin-bottom: 10px;
 }
+.chat-mention-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.chat-mention-select {
+  flex: 1; padding: 8px 10px; border-radius: 8px; border: 2px solid var(--border);
+  font-size: 13px; font-family: inherit; background: var(--card);
+}
 .chat-input-row { display: flex; gap: 8px; }
 .chat-input {
   flex: 1; padding: 12px 14px; border-radius: 10px; border: 2px solid var(--border);
@@ -557,4 +562,27 @@ body {
   border-radius: 12px; font-size: 14px; font-weight: 500;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 999;
   animation: fadeIn 0.3s ease;
+}
+
+/* ====== POPUP NOTIFICATION ====== */
+.popup-notif {
+  position: fixed; top: 0; left: 0; right: 0;
+  max-width: 480px; margin: 0 auto;
+  background: var(--card); padding: 14px 16px;
+  border-bottom: 3px solid var(--gold);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  z-index: 500;
+  display: flex; align-items: center; gap: 12px;
+  animation: slideDown 0.3s ease;
+  cursor: pointer;
+}
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+.popup-notif-icon { font-size: 24px; flex-shrink: 0; }
+.popup-notif-body { flex: 1; }
+.popup-notif-title { font-size: 12px; font-weight: 700; color: var(--danger); }
+.popup-notif-text { font-size: 13px; color: var(--text); margin-top: 2px; }
+.popup-notif-time { font-size: 10px; color: var(--sub); }
+.popup-notif-close {
+  background: none; border: none; font-size: 18px; color: var(--sub);
+  cursor: pointer; padding: 4px; flex-shrink: 0;
 }

@@ -740,15 +740,31 @@ async function sendToGAS(payload) {
 
 // ====== チャット ======
 function sendChat() {
+  const mention = document.getElementById('chatMention').value;
   const input = document.getElementById('chatInput');
   const msg = input.value.trim();
+
+  if (!mention) { showToast('宛先（@メンション）を選択してください'); return; }
   if (!msg) return;
 
-  addChatMessage(msg, 'user');
+  const displayMsg = `@${mention} ${msg}`;
+  addChatMessage(displayMsg, 'user');
   input.value = '';
 
-  // Edge Function経由でAIに質問
-  chatWithAI(msg);
+  if (mention === 'AI') {
+    // AIに質問
+    chatWithAI(msg);
+  } else {
+    // 人宛のメッセージ → GASに送信して通知
+    sendToGAS({
+      action: 'chat_message',
+      from: currentUser.name,
+      to: mention,
+      message: msg,
+      timestamp: formatTimestamp(),
+    });
+    addChatMessage(`${mention}さんにメッセージを送信しました`, 'bot');
+  }
 }
 
 async function chatWithAI(msg) {
@@ -1173,8 +1189,9 @@ function closeHelp() {
 let notifications = [];
 let notifPollTimer = null;
 
+let lastNotifCount = 0;
+
 function startNotificationPolling() {
-  // 30秒ごとにチェック
   fetchNotifications();
   notifPollTimer = setInterval(fetchNotifications, 30000);
 }
@@ -1207,9 +1224,15 @@ async function fetchNotifications() {
     if (notifications.length > 0) {
       badge.textContent = notifications.length;
       badge.style.display = 'flex';
+      // 新しい通知があればポップアップ表示
+      if (notifications.length > lastNotifCount) {
+        const newest = notifications[0];
+        showPopupNotification(newest.title, newest.body, newest.id);
+      }
     } else {
       badge.style.display = 'none';
     }
+    lastNotifCount = notifications.length;
   } catch (err) {
     console.error('通知取得エラー:', err);
   }
@@ -1320,6 +1343,33 @@ function rejectItem() {
   showToast('↩️ ' + selectedItem.mgmtNum + ' 差し戻しました');
   closeApproval();
   fetchNotifications();
+}
+
+// ====== ポップアップ通知（どのページでも表示） ======
+function showPopupNotification(title, body, id) {
+  // 既存のポップアップがあれば消す
+  const existing = document.querySelector('.popup-notif');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.className = 'popup-notif';
+  popup.innerHTML = `
+    <span class="popup-notif-icon">🔔</span>
+    <div class="popup-notif-body">
+      <div class="popup-notif-title">${escapeHtml(title)}</div>
+      <div class="popup-notif-text">${escapeHtml(body)}</div>
+    </div>
+    <button class="popup-notif-close" onclick="this.parentElement.remove()">✕</button>
+  `;
+  popup.onclick = function(e) {
+    if (e.target.classList.contains('popup-notif-close')) return;
+    popup.remove();
+    if (id) openApproval(id);
+  };
+  document.body.appendChild(popup);
+
+  // 5秒後に自動で消える
+  setTimeout(() => { if (popup.parentElement) popup.remove(); }, 5000);
 }
 
 // ====== プロフィール画像 ======
