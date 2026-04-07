@@ -69,6 +69,7 @@ function showMainScreen() {
   renderStockList();
   checkTodayAttendance();
   startNotificationPolling();
+  loadProfileImages();
 }
 
 // 自動ログイン
@@ -1319,6 +1320,148 @@ function rejectItem() {
   showToast('↩️ ' + selectedItem.mgmtNum + ' 差し戻しました');
   closeApproval();
   fetchNotifications();
+}
+
+// ====== プロフィール画像 ======
+let _cropImg = null, _cropX = 0, _cropY = 0, _cropScale = 1;
+let _cropDragging = false, _cropStartX = 0, _cropStartY = 0;
+let _cropMode = 'avatar'; // 'avatar' or 'bg'
+
+function changeAvatarImage() {
+  _cropMode = 'avatar';
+  document.getElementById('avatarInput').click();
+}
+
+function changeBgImage() {
+  _cropMode = 'bg';
+  document.getElementById('bgInput').click();
+}
+
+function handleAvatarFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => openCropModal(e.target.result, 'avatar');
+  reader.readAsDataURL(file);
+}
+
+function handleBgFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => openCropModal(e.target.result, 'bg');
+  reader.readAsDataURL(file);
+}
+
+function openCropModal(dataUrl, mode) {
+  _cropMode = mode;
+  _cropImg = new Image();
+  _cropImg.onload = function() {
+    _cropX = 0; _cropY = 0; _cropScale = 1;
+    document.getElementById('cropZoom').value = 100;
+    document.getElementById('cropZoomLabel').textContent = '100%';
+
+    const container = document.getElementById('cropContainer');
+    if (mode === 'bg') {
+      container.classList.add('square');
+    } else {
+      container.classList.remove('square');
+    }
+
+    document.getElementById('cropImage').src = dataUrl;
+    document.getElementById('cropOverlay').classList.add('open');
+    updateCropImage();
+
+    container.onmousedown = cropDragStart;
+    container.onmousemove = cropDragMove;
+    container.onmouseup = cropDragEnd;
+    container.ontouchstart = (e) => { e.preventDefault(); const t = e.touches[0]; _cropDragging = true; _cropStartX = t.clientX - _cropX; _cropStartY = t.clientY - _cropY; };
+    container.ontouchmove = (e) => { e.preventDefault(); if (!_cropDragging) return; const t = e.touches[0]; _cropX = t.clientX - _cropStartX; _cropY = t.clientY - _cropStartY; updateCropImage(); };
+    container.ontouchend = cropDragEnd;
+  };
+  _cropImg.src = dataUrl;
+}
+
+function updateCropImage() {
+  const img = document.getElementById('cropImage');
+  if (!img || !_cropImg) return;
+  const container = document.getElementById('cropContainer');
+  const cw = container.offsetWidth;
+  const ch = container.offsetHeight;
+  const aspect = _cropImg.width / _cropImg.height;
+  let w, h;
+  if (aspect > cw / ch) { h = ch * _cropScale; w = h * aspect; }
+  else { w = cw * _cropScale; h = w / aspect; }
+  img.style.width = w + 'px';
+  img.style.height = h + 'px';
+  img.style.left = ((cw - w) / 2 + _cropX) + 'px';
+  img.style.top = ((ch - h) / 2 + _cropY) + 'px';
+}
+
+function setCropScale(s) {
+  _cropScale = s;
+  document.getElementById('cropZoomLabel').textContent = Math.round(s * 100) + '%';
+  updateCropImage();
+}
+
+function cropDragStart(e) { _cropDragging = true; _cropStartX = e.clientX - _cropX; _cropStartY = e.clientY - _cropY; }
+function cropDragMove(e) { if (!_cropDragging) return; _cropX = e.clientX - _cropStartX; _cropY = e.clientY - _cropStartY; updateCropImage(); }
+function cropDragEnd() { _cropDragging = false; }
+
+function applyCrop() {
+  const container = document.getElementById('cropContainer');
+  const cw = container.offsetWidth;
+  const ch = container.offsetHeight;
+  const canvas = document.createElement('canvas');
+
+  if (_cropMode === 'bg') {
+    canvas.width = 600; canvas.height = 300;
+  } else {
+    canvas.width = 300; canvas.height = 300;
+  }
+
+  const ctx = canvas.getContext('2d');
+  const aspect = _cropImg.width / _cropImg.height;
+  let w, h;
+  if (aspect > cw / ch) { h = ch * _cropScale; w = h * aspect; }
+  else { w = cw * _cropScale; h = w / aspect; }
+  const sx = (cw - w) / 2 + _cropX;
+  const sy = (ch - h) / 2 + _cropY;
+  const scaleX = canvas.width / cw;
+  const scaleY = canvas.height / ch;
+  ctx.drawImage(_cropImg, sx * scaleX, sy * scaleY, w * scaleX, h * scaleY);
+
+  const result = canvas.toDataURL('image/jpeg', 0.85);
+
+  if (_cropMode === 'avatar') {
+    document.getElementById('avatarImg').src = result;
+    document.getElementById('avatarImg').style.display = 'block';
+    document.getElementById('avatarEmoji').style.display = 'none';
+    localStorage.setItem('f8_avatar', result);
+  } else {
+    document.getElementById('mypageBg').style.backgroundImage = `url(${result})`;
+    localStorage.setItem('f8_bg', result);
+  }
+
+  cancelCrop();
+}
+
+function cancelCrop() {
+  document.getElementById('cropOverlay').classList.remove('open');
+  _cropImg = null;
+}
+
+function loadProfileImages() {
+  const avatar = localStorage.getItem('f8_avatar');
+  if (avatar) {
+    document.getElementById('avatarImg').src = avatar;
+    document.getElementById('avatarImg').style.display = 'block';
+    document.getElementById('avatarEmoji').style.display = 'none';
+  }
+  const bg = localStorage.getItem('f8_bg');
+  if (bg) {
+    document.getElementById('mypageBg').style.backgroundImage = `url(${bg})`;
+  }
 }
 
 // ====== ユーティリティ ======

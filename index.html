@@ -6,7 +6,7 @@
 <title>テイクバック 流通事業部</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1C2541">
-<link rel="stylesheet" href="css/style.css?v=20260408d">
+<link rel="stylesheet" href="css/style.css?v=20260408e">
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -659,10 +659,43 @@
 
     <!-- マイページタブ -->
     <div id="tab-mypage" class="tab-content">
-      <div class="mypage-header">
-        <div class="mypage-avatar">👤</div>
+      <div class="mypage-header" id="mypageHeader">
+        <div class="mypage-bg" id="mypageBg" onclick="changeBgImage()">
+          <div class="mypage-bg-hint">タップで背景変更</div>
+        </div>
+        <div class="mypage-avatar" id="mypageAvatar" onclick="changeAvatarImage()">
+          <span id="avatarEmoji">👤</span>
+          <img id="avatarImg" class="avatar-img" style="display:none">
+          <div class="avatar-edit-hint">📷</div>
+        </div>
         <h3 id="mypageName">林和人</h3>
         <p class="mypage-role">スタッフ</p>
+      </div>
+      <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarFile(event)">
+      <input type="file" id="bgInput" accept="image/*" style="display:none" onchange="handleBgFile(event)">
+
+      <!-- 画像トリミングモーダル -->
+      <div id="cropOverlay" class="modal-overlay">
+        <div class="modal" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h3 style="color:var(--text)">📷 画像を調整</h3>
+            <button class="modal-close" onclick="cancelCrop()">✕</button>
+          </div>
+          <div class="modal-body" style="text-align:center">
+            <div id="cropContainer" class="crop-container">
+              <img id="cropImage" class="crop-image">
+            </div>
+            <div class="crop-zoom">
+              <span>🔍</span>
+              <input type="range" id="cropZoom" min="50" max="300" value="100" oninput="setCropScale(this.value/100)">
+              <span id="cropZoomLabel">100%</span>
+            </div>
+            <div style="display:flex; gap:12px; margin-top:16px;">
+              <button class="btn btn-outline" onclick="cancelCrop()" style="flex:1">キャンセル</button>
+              <button class="btn btn-primary" onclick="applyCrop()" style="flex:1">決定</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="section">
         <h3 class="section-title">📊 今月の実績</h3>
@@ -739,7 +772,7 @@
 
 </div>
 
-<script src="js/config.js?v=20260408d"></script>
-<script src="js/app.js?v=20260408d"></script>
+<script src="js/config.js?v=20260408e"></script>
+<script src="js/app.js?v=20260408e"></script>
 </body>
 </html>
