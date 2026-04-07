@@ -1808,10 +1808,24 @@ function loadTheme() {
 // ====== アバターメニュー ======
 function openAvatarMenu() {
   document.getElementById('avatarMenu').style.display = 'block';
+  setTimeout(() => document.addEventListener('click', closeMenusOnOutside), 10);
+}
+
+function closeMenusOnOutside(e) {
+  const avatarMenu = document.getElementById('avatarMenu');
+  const bgMenu = document.getElementById('bgMenu');
+  if (avatarMenu && avatarMenu.style.display !== 'none' && !avatarMenu.contains(e.target)) {
+    closeAvatarMenu();
+  }
+  if (bgMenu && bgMenu.style.display !== 'none' && !bgMenu.contains(e.target)) {
+    closeBgMenu();
+  }
+  document.removeEventListener('click', closeMenusOnOutside);
 }
 
 function closeAvatarMenu() {
   document.getElementById('avatarMenu').style.display = 'none';
+  document.removeEventListener('click', closeMenusOnOutside);
 }
 
 function editAvatarImage() {
@@ -1824,10 +1838,12 @@ function editAvatarImage() {
 // ====== 背景メニュー ======
 function openBgMenu() {
   document.getElementById('bgMenu').style.display = 'block';
+  setTimeout(() => document.addEventListener('click', closeMenusOnOutside), 10);
 }
 
 function closeBgMenu() {
   document.getElementById('bgMenu').style.display = 'none';
+  document.removeEventListener('click', closeMenusOnOutside);
 }
 
 function editBgImage() {
