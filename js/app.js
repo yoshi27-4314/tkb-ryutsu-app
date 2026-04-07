@@ -420,6 +420,16 @@ async function completeRegistration(loc) {
     staffName: currentUser.name,
   });
 
+  // Google Driveに写真アップロード（バックグラウンド）
+  uploadToDrive(mgmtNum).then(result => {
+    if (result && result.folderUrl) {
+      currentItem.driveFolderUrl = result.folderUrl;
+      console.log('Drive保存完了:', result.folderUrl);
+    }
+  }).catch(err => {
+    console.error('Driveアップロードエラー:', err);
+  });
+
   // GASに送信（バックグラウンド）
   sendToGAS({
     kanri_bango: mgmtNum,
@@ -454,6 +464,47 @@ async function completeRegistration(loc) {
 function startNewItem() {
   resetCameraFlow();
   switchTab('camera');
+}
+
+// ====== Google Drive連携 ======
+async function uploadToDrive(mgmtNum) {
+  // 撮影した写真を収集
+  const images = [];
+  if (currentItem.photo1) {
+    images.push({ data: currentItem.photo1, name: '01_商品.jpg', mimeType: 'image/jpeg' });
+  }
+  if (currentItem.photo2) {
+    images.push({ data: currentItem.photo2, name: '02_商品.jpg', mimeType: 'image/jpeg' });
+  }
+  if (currentItem.photo3) {
+    images.push({ data: currentItem.photo3, name: '03_商品.jpg', mimeType: 'image/jpeg' });
+  }
+  if (currentItem.photo4) {
+    images.push({ data: currentItem.photo4, name: '04_商品.jpg', mimeType: 'image/jpeg' });
+  }
+  if (currentItem.photo5) {
+    images.push({ data: currentItem.photo5, name: '05_商品.jpg', mimeType: 'image/jpeg' });
+  }
+
+  if (images.length === 0) return null;
+
+  try {
+    const response = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/takeback-drive', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': CONFIG.SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        managementNumber: mgmtNum,
+        images: images,
+      }),
+    });
+    return await response.json();
+  } catch (err) {
+    console.error('Drive upload error:', err);
+    return null;
+  }
 }
 
 // ====== GAS連携 ======
