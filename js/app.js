@@ -187,7 +187,7 @@ function renderTodayDuty() {
   const container = document.getElementById('dutyCards');
   if (!container) return;
 
-  const dow = new Date().getDay();
+  const dow = getTodayDow();
   if (dow === 0 || dow === 6) { container.innerHTML = ''; return; }
 
   const duties = CONFIG.DUTY_ROTATION[dow];
@@ -250,6 +250,10 @@ function hideAnalyzingOverlay() {
 const IS_TEST_MODE = new URLSearchParams(window.location.search).has('test');
 if (IS_TEST_MODE) {
   console.log('[テストモード] GAS送信先: テスト用スプレッドシート');
+}
+
+function getTodayDow() {
+  return new Date().getDay();
 }
 
 // ====== 状態管理 ======
@@ -583,7 +587,7 @@ function renderMemberTimeline() {
   const totalHours = timelineEnd - timelineStart;
 
   // 全スタッフの出勤情報を取得（基本勤務時間をベースに、実際の出退勤があれば上書き）
-  const dow = new Date().getDay(); // 0=日〜6=土
+  const dow = getTodayDow(); // 0=日〜6=土
   const members = [];
   CONFIG.STAFF.forEach(s => {
     // タイムライン非表示のスタッフ（浅野・三島等）
