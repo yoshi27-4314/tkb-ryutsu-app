@@ -6,7 +6,7 @@
 <title>テイクバック 流通事業部</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1C2541">
-<link rel="stylesheet" href="css/style.css?v=20260414f">
+<link rel="stylesheet" href="css/style.css?v=20260415a">
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -131,6 +131,14 @@
         <h3 class="section-title">📋 お知らせ</h3>
         <div class="notice-list" id="noticeList">
           <p class="empty-notice" id="emptyNotice">新しいお知らせはありません</p>
+        </div>
+      </div>
+
+      <!-- 一時保存中の商品 -->
+      <div id="draftItemsSection" style="display:none">
+        <div class="section">
+          <h3 class="section-title">💾 作業途中の商品</h3>
+          <div id="draftItemsList"></div>
         </div>
       </div>
 
@@ -692,8 +700,9 @@
           </div>
           <div id="needsMorePhotosMsg" class="needs-more-photos" style="display:none"></div>
           <div class="ai-actions">
-            <button class="btn btn-primary" onclick="acceptJudgment()">✅ OK</button>
+            <button class="btn btn-primary" onclick="acceptJudgment()">✅ OK → 商品撮影へ</button>
             <button class="btn btn-warn" onclick="consultAsano()">🙋 相談する</button>
+            <button class="btn btn-outline" onclick="saveDraft()" style="margin-top:8px; font-size:13px;">💾 一時保存して中断</button>
           </div>
         </div>
       </div>
@@ -711,6 +720,7 @@
         <div id="afterAllPhotos">
           <p style="font-size:12px; color:var(--sub); margin-bottom:8px;">※ 追加撮影はオプションです。撮らなくても次に進めます。</p>
           <button class="btn btn-primary" onclick="goToStep4()">次へ → 保管場所を選択</button>
+          <button class="btn btn-outline" onclick="saveDraft()" style="margin-top:8px; font-size:13px;">💾 一時保存して中断</button>
         </div>
       </div>
 
@@ -1123,7 +1133,7 @@
 
 </div>
 
-<script src="js/config.js?v=20260414f"></script>
-<script src="js/app.js?v=20260414f"></script>
+<script src="js/config.js?v=20260415a"></script>
+<script src="js/app.js?v=20260415a"></script>
 </body>
 </html>

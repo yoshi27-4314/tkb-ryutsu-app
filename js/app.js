@@ -58,6 +58,130 @@ function clearWorkingSession() {
   sessionStorage.removeItem(SESSION_KEY);
 }
 
+// ====== 一時保存（下書き） ======
+const DRAFTS_KEY = 'f8_draft_items';
+
+function saveDraft() {
+  if (!currentItem.productName && !currentItem.photo1) {
+    showToast('保存するデータがありません');
+    return;
+  }
+
+  const drafts = JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]');
+  const draft = {
+    id: 'draft_' + Date.now(),
+    item: { ...currentItem },
+    category: currentCategory,
+    bundle: currentBundle,
+    step: cameraStep,
+    photos: multiPhotos.map(p => p ? true : false), // 写真データは重いのでフラグだけ
+    photoData: multiPhotos, // 実際の写真データ
+    staffName: currentUser.name,
+    savedAt: new Date().toISOString(),
+  };
+  drafts.unshift(draft);
+  // 最大20件
+  if (drafts.length > 20) drafts.pop();
+
+  try {
+    localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+    showToast('💾 一時保存しました。ホーム画面から再開できます。');
+    clearWorkingSession();
+    resetCameraFlow();
+    switchTab('home');
+    renderDraftItems();
+  } catch(e) {
+    // localStorageの容量超過
+    showToast('保存容量を超えました。古い下書きを削除してください。');
+  }
+}
+
+function renderDraftItems() {
+  const container = document.getElementById('draftItemsList');
+  const section = document.getElementById('draftItemsSection');
+  if (!container || !section) return;
+
+  const drafts = JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]');
+  const myDrafts = drafts.filter(d => d.staffName === currentUser?.name);
+
+  if (myDrafts.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = '';
+  container.innerHTML = myDrafts.map(d => {
+    const name = d.item.productName || '商品名未定';
+    const channel = d.item.channel || '未判定';
+    const stepLabel = ['種別選択', '撮影', 'AI判定結果', '商品写真', '保管場所', '完了'][d.step] || '不明';
+    const time = new Date(d.savedAt);
+    const timeStr = `${time.getMonth()+1}/${time.getDate()} ${time.getHours()}:${String(time.getMinutes()).padStart(2,'0')}`;
+    return `
+      <div class="draft-item">
+        <div class="draft-info" onclick="resumeDraft('${d.id}')">
+          <div class="draft-name">${escapeHtml(name)}</div>
+          <div class="draft-meta">${escapeHtml(channel)} — ${stepLabel}で中断 — ${timeStr}</div>
+        </div>
+        <button class="draft-delete" onclick="deleteDraft('${d.id}')">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function resumeDraft(draftId) {
+  const drafts = JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]');
+  const draft = drafts.find(d => d.id === draftId);
+  if (!draft) { showToast('下書きが見つかりません'); return; }
+
+  // 復元
+  currentItem = draft.item;
+  currentCategory = draft.category;
+  currentBundle = draft.bundle || 'single';
+  multiPhotos = draft.photoData || [null,null,null,null,null];
+
+  // 写真プレビュー復元
+  for (let i = 0; i < 5; i++) {
+    if (multiPhotos[i]) {
+      const preview = document.getElementById('multiPreview' + (i+1));
+      const slot = document.getElementById('photoSlot' + (i+1));
+      if (preview) { preview.src = multiPhotos[i]; preview.style.display = 'block'; }
+      if (slot) { slot.classList.add('has-photo'); slot.querySelector('.photo-slot-remove').style.display = ''; }
+    }
+  }
+  updatePhotoCountUI();
+
+  // AI判定結果があれば表示を復元
+  if (currentItem.productName) {
+    document.getElementById('aiProductName').textContent = currentItem.productName || '—';
+    document.getElementById('aiCategory').textContent = currentItem.category || '—';
+    document.getElementById('aiCondition').textContent = `${currentItem.condition || '—'} ${currentItem.conditionNote || ''}`;
+    document.getElementById('aiChannel').textContent = currentItem.channel || '—';
+    document.getElementById('aiPrice').textContent = currentItem.estimatedPrice
+      ? `¥${currentItem.estimatedPrice.min?.toLocaleString()}〜¥${currentItem.estimatedPrice.max?.toLocaleString()}`
+      : '—';
+    document.getElementById('aiSize').textContent = currentItem.estimatedSize || '—';
+  }
+
+  switchTab('camera');
+  showCameraStep(draft.step);
+  showToast('📋 下書きを再開しました');
+}
+
+function deleteDraft(draftId) {
+  let drafts = JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]');
+  drafts = drafts.filter(d => d.id !== draftId);
+  localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+  renderDraftItems();
+  showToast('下書きを削除しました');
+}
+
+// 自動保存（5秒ごと、作業中のみ）
+setInterval(() => {
+  if (currentTab === 'camera' && cameraStep > 0 && (currentItem.productName || currentItem.photo1)) {
+    saveWorkingSession();
+  }
+}, 5000);
+
 // ====== テストモード判定 ======
 const IS_TEST_MODE = new URLSearchParams(window.location.search).has('test');
 if (IS_TEST_MODE) {
@@ -190,6 +314,8 @@ function showMainScreen() {
   if (restoreWorkingSession()) {
     showToast('作業中のデータを復元しました');
   }
+  // 一時保存リスト表示
+  renderDraftItems();
   const savedTab = localStorage.getItem('f8_current_tab');
   if (savedTab) switchTab(savedTab);
 }
