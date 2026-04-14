@@ -182,6 +182,28 @@ setInterval(() => {
   }
 }, 5000);
 
+// ====== AI判定中オーバーレイ ======
+function showAnalyzingOverlay() {
+  let overlay = document.getElementById('analyzingOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'analyzingOverlay';
+    overlay.className = 'analyzing-overlay';
+    overlay.innerHTML = `
+      <div class="analyzing-spinner"></div>
+      <div class="analyzing-text">🤖 AIが判定中<span class="analyzing-dots"></span></div>
+      <div class="analyzing-sub">写真を分析しています</div>
+    `;
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+}
+
+function hideAnalyzingOverlay() {
+  const overlay = document.getElementById('analyzingOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
 // ====== テストモード判定 ======
 const IS_TEST_MODE = new URLSearchParams(window.location.search).has('test');
 if (IS_TEST_MODE) {
@@ -1031,7 +1053,7 @@ async function analyzePhoto() {
     return;
   }
 
-  showToast('🤖 AIが判定中...');
+  showAnalyzingOverlay();
   const btn = document.querySelector('#afterPhotos .btn-primary');
   if (btn) { btn.disabled = true; btn.textContent = '判定中...'; }
 
@@ -1103,9 +1125,16 @@ async function analyzePhoto() {
     console.error('AI判定エラー:', err);
     showToast('通信エラー。もう一度お試しください。');
   } finally {
+    hideAnalyzingOverlay();
     const photoCount = multiPhotos.filter(p => p !== null).length;
     if (btn) { btn.disabled = false; btn.textContent = `🤖 AIに判定させる（${photoCount}枚）`; }
   }
+}
+
+function goBackToPhotos() {
+  showCameraStep(1);
+  document.getElementById('entrySelect').style.display = 'none';
+  document.getElementById('photoMode').style.display = 'block';
 }
 
 function goBackToAddPhotos() {

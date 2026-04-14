@@ -6,7 +6,7 @@
 <title>テイクバック 流通事業部</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1C2541">
-<link rel="stylesheet" href="css/style.css?v=20260415a">
+<link rel="stylesheet" href="css/style.css?v=20260415b">
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -649,6 +649,7 @@
 
       <!-- ステップ2: AI判定結果 -->
       <div id="cameraStep2" class="camera-step">
+        <button class="btn btn-outline step-back-btn" onclick="goBackToPhotos()">← 写真を撮り直す</button>
         <div class="ai-result">
           <div class="ai-header">
             <span class="ai-icon">🤖</span>
@@ -709,6 +710,7 @@
 
       <!-- ステップ3: 追加撮影ガイド -->
       <div id="cameraStep3" class="camera-step">
+        <button class="btn btn-outline step-back-btn" onclick="showCameraStep(2)">← 判定結果に戻る</button>
         <div class="camera-guide">
           <h3>📸 出品用の商品写真を撮影</h3>
           <p id="guideText">出品に使う写真を撮ります。1枚目がメイン画像になります。</p>
@@ -726,6 +728,7 @@
 
       <!-- ステップ4: 保管場所 -->
       <div id="cameraStep4" class="camera-step">
+        <button class="btn btn-outline step-back-btn" onclick="showCameraStep(3)">← 商品撮影に戻る</button>
         <div class="section">
           <h3 class="section-title">📍 保管場所を選択</h3>
           <div class="location-grid">
@@ -1133,7 +1136,7 @@
 
 </div>
 
-<script src="js/config.js?v=20260415a"></script>
-<script src="js/app.js?v=20260415a"></script>
+<script src="js/config.js?v=20260415b"></script>
+<script src="js/app.js?v=20260415b"></script>
 </body>
 </html>
