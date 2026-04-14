@@ -188,9 +188,9 @@ function renderTodayDuty() {
   if (!container) return;
 
   const dow = new Date().getDay(); // 0=日〜6=土
-  const shuppinStaff = CONFIG.SHUPPIN_ROTATION[dow] || '—';
-  const konpoStaff = CONFIG.KONPO_STAFF || '—';
-  const torihikiStaff = CONFIG.TORIHIKI_NAVI || '—';
+  const shuppinStaff = CONFIG.SHUPPIN_ROTATION[dow] || null;
+  const konpoStaff = CONFIG.KONPO_STAFF || null;
+  const torihikiStaff = CONFIG.TORIHIKI_ROTATION ? CONFIG.TORIHIKI_ROTATION[dow] : null;
 
   // 土日は当番なし
   if (dow === 0 || dow === 6) {
@@ -198,29 +198,42 @@ function renderTodayDuty() {
     return;
   }
 
-  // 自分が当番かどうかハイライト
   const myName = currentUser?.name || '';
-  const isMyShuppin = myName === shuppinStaff;
-  const isMyKonpo = myName === konpoStaff;
-  const isMyTorihiki = myName === torihikiStaff;
+  let cards = '';
 
-  container.innerHTML = `
-    <div class="duty-card ${isMyShuppin ? 'duty-mine' : ''}">
+  if (shuppinStaff) {
+    const isMine = myName === shuppinStaff;
+    cards += `<div class="duty-card ${isMine ? 'duty-mine' : ''}">
       <span class="duty-icon">📝</span>
       <span class="duty-label">出品</span>
       <span class="duty-name">${escapeHtml(shuppinStaff.split(/[　 ]/)[0])}</span>
-    </div>
-    <div class="duty-card ${isMyTorihiki ? 'duty-mine' : ''}">
+    </div>`;
+  }
+
+  if (torihikiStaff) {
+    const isMine = myName === torihikiStaff;
+    cards += `<div class="duty-card ${isMine ? 'duty-mine' : ''}">
       <span class="duty-icon">💬</span>
       <span class="duty-label">取引ナビ</span>
       <span class="duty-name">${escapeHtml(torihikiStaff.split(/[　 ]/)[0])}</span>
-    </div>
-    <div class="duty-card ${isMyKonpo ? 'duty-mine' : ''}">
-      <span class="duty-icon">📦</span>
-      <span class="duty-label">梱包</span>
-      <span class="duty-name">${escapeHtml(konpoStaff.split(/[　 ]/)[0])}</span>
-    </div>
-  `;
+    </div>`;
+  }
+
+  if (konpoStaff) {
+    // 桃井の出勤日のみ表示
+    const konpoInfo = CONFIG.STAFF.find(s => s.name === konpoStaff);
+    const konpoOff = konpoInfo && konpoInfo.offDays ? konpoInfo.offDays.includes(dow) : false;
+    if (!konpoOff) {
+      const isMine = myName === konpoStaff;
+      cards += `<div class="duty-card ${isMine ? 'duty-mine' : ''}">
+        <span class="duty-icon">📦</span>
+        <span class="duty-label">梱包</span>
+        <span class="duty-name">${escapeHtml(konpoStaff.split(/[　 ]/)[0])}</span>
+      </div>`;
+    }
+  }
+
+  container.innerHTML = cards;
 }
 
 // ====== AI判定中オーバーレイ ======
