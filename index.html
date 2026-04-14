@@ -679,21 +679,18 @@
         <div class="chat-input-area">
           <div class="chat-mention-row">
             <label style="font-size:12px; color:var(--sub);">宛先（複数選択OK）</label>
-            <div class="mention-selector" id="mentionSelector">
-              <button class="mention-toggle" id="mentionToggleBtn" onclick="toggleMentionList()">@メンションを選択 ▼</button>
-              <div class="mention-list" id="mentionList" style="display:none">
-                <label class="mention-item"><input type="checkbox" value="AI"> 🤖 AIアシスタント</label>
-                <label class="mention-item"><input type="checkbox" value="浅野儀頼"> 👤 浅野儀頼</label>
-                <label class="mention-item"><input type="checkbox" value="全員"> 📢 全員</label>
-                <label class="mention-item"><input type="checkbox" value="林和人"> 👤 林和人</label>
-                <label class="mention-item"><input type="checkbox" value="横山優"> 👤 横山優</label>
-                <label class="mention-item"><input type="checkbox" value="平野光雄"> 👤 平野光雄</label>
-                <label class="mention-item"><input type="checkbox" value="三島圭織"> 👤 三島圭織</label>
-                <label class="mention-item"><input type="checkbox" value="桃井侑菜"> 👤 桃井侑菜</label>
-                <label class="mention-item"><input type="checkbox" value="伊藤佐和子"> 👤 伊藤佐和子</label>
-                <label class="mention-item"><input type="checkbox" value="奥村亜優李"> 👤 奥村亜優李</label>
-              </div>
-            </div>
+          </div>
+          <div class="mention-chips" id="mentionChips">
+            <label class="mention-chip"><input type="checkbox" value="AI"><span>🤖 AI</span></label>
+            <label class="mention-chip"><input type="checkbox" value="浅野儀頼"><span>浅野</span></label>
+            <label class="mention-chip"><input type="checkbox" value="全員"><span>📢 全員</span></label>
+            <label class="mention-chip"><input type="checkbox" value="林和人"><span>林</span></label>
+            <label class="mention-chip"><input type="checkbox" value="横山優"><span>横山</span></label>
+            <label class="mention-chip"><input type="checkbox" value="平野光雄"><span>平野</span></label>
+            <label class="mention-chip"><input type="checkbox" value="三島圭織"><span>三島</span></label>
+            <label class="mention-chip"><input type="checkbox" value="桃井侑菜"><span>桃井</span></label>
+            <label class="mention-chip"><input type="checkbox" value="伊藤佐和子"><span>伊藤</span></label>
+            <label class="mention-chip"><input type="checkbox" value="奥村亜優李"><span>奥村</span></label>
           </div>
           <div class="chat-input-row">
             <input type="text" id="chatInput" placeholder="メッセージを入力..." class="chat-input">

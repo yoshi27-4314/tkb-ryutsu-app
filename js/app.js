@@ -1124,52 +1124,9 @@ async function sendToGAS(payload) {
 
 // ====== チャット ======
 function getSelectedMentions() {
-  const checkboxes = document.querySelectorAll('#mentionList input[type="checkbox"]:checked');
+  const checkboxes = document.querySelectorAll('#mentionChips input[type="checkbox"]:checked');
   return Array.from(checkboxes).map(cb => cb.value);
 }
-
-let mentionOpen = false;
-
-function toggleMentionList() {
-  const list = document.getElementById('mentionList');
-  mentionOpen = !mentionOpen;
-  list.style.display = mentionOpen ? '' : 'none';
-}
-
-function closeMentionList() {
-  const list = document.getElementById('mentionList');
-  if (list) list.style.display = 'none';
-  mentionOpen = false;
-}
-
-function updateMentionButton() {
-  const selected = getSelectedMentions();
-  const btn = document.getElementById('mentionToggleBtn');
-  if (selected.length === 0) {
-    btn.textContent = '@メンションを選択 ▼';
-  } else {
-    btn.textContent = selected.map(s => '@' + s).join(', ') + ' ▼';
-  }
-}
-
-// チェックボックス変更時にボタン表示を更新
-document.addEventListener('change', (e) => {
-  if (e.target.closest('#mentionList')) {
-    updateMentionButton();
-  }
-});
-
-// メンションリスト外タップで閉じる（タッチ対応）
-document.addEventListener('touchstart', (e) => {
-  if (mentionOpen && !e.target.closest('.mention-selector')) {
-    closeMentionList();
-  }
-}, { passive: true });
-document.addEventListener('mousedown', (e) => {
-  if (mentionOpen && !e.target.closest('.mention-selector')) {
-    closeMentionList();
-  }
-});
 
 function sendChat() {
   const mentions = getSelectedMentions();
@@ -1203,8 +1160,8 @@ function sendChat() {
     }
   }
 
-  // メンションリストを閉じる
-  document.getElementById('mentionList').style.display = 'none';
+  // メンション選択をリセット
+  document.querySelectorAll('#mentionChips input[type="checkbox"]').forEach(cb => cb.checked = false);
 }
 
 async function chatWithAI(msg) {
