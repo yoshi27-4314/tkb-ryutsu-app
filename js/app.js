@@ -117,6 +117,12 @@ function showMainScreen() {
   initMiniClocks();
   renderFeatureGuide();
   renderChangelog();
+  renderLeaveHistory();
+  // 休み希望のデフォルト日付を明日に
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const leaveDate = document.getElementById('leaveDate');
+  if (leaveDate) leaveDate.value = tomorrow.toISOString().slice(0, 10);
   const savedTab = localStorage.getItem('f8_current_tab');
   if (savedTab) switchTab(savedTab);
 }
@@ -2574,6 +2580,98 @@ function markChangelogRead() {
   if (CONFIG.CHANGELOG && CONFIG.CHANGELOG.length > 0) {
     localStorage.setItem('f8_last_seen_version', CONFIG.CHANGELOG[0].version);
   }
+}
+
+// ====== 休み希望・連絡 ======
+let selectedLeaveType = '';
+
+function selectLeaveType(type, btn) {
+  selectedLeaveType = type;
+  document.querySelectorAll('.leave-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const timeSection = document.getElementById('leaveTimeSection');
+  const timeLabel = document.getElementById('leaveTimeLabel');
+  if (type === '遅刻') {
+    timeSection.style.display = '';
+    timeLabel.textContent = '出勤予定時刻';
+  } else if (type === '早退') {
+    timeSection.style.display = '';
+    timeLabel.textContent = '早退予定時刻';
+  } else {
+    timeSection.style.display = 'none';
+  }
+}
+
+function submitLeaveRequest() {
+  if (!selectedLeaveType) { showToast('種別を選択してください'); return; }
+  const date = document.getElementById('leaveDate').value;
+  if (!date) { showToast('日付を選択してください'); return; }
+  const reason = document.getElementById('leaveReason').value.trim();
+  const time = (selectedLeaveType === '遅刻' || selectedLeaveType === '早退')
+    ? document.getElementById('leaveTime').value : null;
+
+  const request = {
+    type: selectedLeaveType,
+    date: date,
+    time: time,
+    reason: reason,
+    staffName: currentUser.name,
+    submittedAt: new Date().toISOString(),
+  };
+
+  // ローカル保存
+  const key = 'f8_leave_requests';
+  const requests = JSON.parse(localStorage.getItem(key) || '[]');
+  requests.unshift(request);
+  localStorage.setItem(key, JSON.stringify(requests));
+
+  // GASに送信（浅野に通知）
+  sendToGAS({
+    action: 'leave_request',
+    type: selectedLeaveType,
+    date: date,
+    time: time || '',
+    reason: reason,
+    staff: currentUser.name,
+    timestamp: formatTimestamp(),
+  });
+
+  showToast(`${selectedLeaveType}の連絡を送信しました`);
+
+  // フォームリセット
+  selectedLeaveType = '';
+  document.querySelectorAll('.leave-type-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('leaveDate').value = '';
+  document.getElementById('leaveReason').value = '';
+  document.getElementById('leaveTimeSection').style.display = 'none';
+
+  renderLeaveHistory();
+}
+
+function renderLeaveHistory() {
+  const container = document.getElementById('leaveHistory');
+  if (!container) return;
+  const requests = JSON.parse(localStorage.getItem('f8_leave_requests') || '[]');
+  // 自分のリクエストだけ、直近5件
+  const mine = requests.filter(r => r.staffName === currentUser?.name).slice(0, 5);
+
+  if (mine.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = '<p style="font-size:12px; color:var(--sub); margin-bottom:6px;">最近の連絡</p>' +
+    mine.map(r => {
+      const timeInfo = r.time ? `（${r.time}）` : '';
+      const reasonInfo = r.reason ? ` — ${escapeHtml(r.reason)}` : '';
+      return `
+        <div class="leave-history-item">
+          <span class="leave-badge leave-badge-${r.type}">${r.type}</span>
+          <span class="leave-detail">${r.date}${timeInfo}${reasonInfo}</span>
+        </div>
+      `;
+    }).join('');
 }
 
 // ====== 権限設定画面（管理者用） ======

@@ -852,6 +852,38 @@
         </div>
       </div>
 
+      <!-- 休み希望・連絡 -->
+      <div class="section">
+        <h3 class="section-title">📋 休み・遅刻・早退の連絡</h3>
+        <div id="leaveRequestForm">
+          <div class="form-group">
+            <label>種別</label>
+            <div class="leave-type-btns">
+              <button class="leave-type-btn" onclick="selectLeaveType('欠勤', this)">欠勤</button>
+              <button class="leave-type-btn" onclick="selectLeaveType('遅刻', this)">遅刻</button>
+              <button class="leave-type-btn" onclick="selectLeaveType('早退', this)">早退</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>日付</label>
+            <input type="date" id="leaveDate" class="search-input" style="width:100%">
+          </div>
+          <div id="leaveTimeSection" style="display:none">
+            <div class="form-group">
+              <label id="leaveTimeLabel">出勤予定時刻</label>
+              <div class="time-input" id="leaveTimeDisplay" onclick="openClockPicker('leaveTime')">10:00</div>
+              <input type="hidden" id="leaveTime" value="10:00">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>理由（任意）</label>
+            <input type="text" id="leaveReason" class="search-input" placeholder="例：体調不良" style="width:100%">
+          </div>
+          <button class="btn btn-primary" onclick="submitLeaveRequest()" style="width:100%">📋 連絡する</button>
+        </div>
+        <div id="leaveHistory" style="margin-top:12px"></div>
+      </div>
+
       <!-- 今月の実績 -->
       <div class="section">
         <h3 class="section-title">📊 今月の実績</h3>
