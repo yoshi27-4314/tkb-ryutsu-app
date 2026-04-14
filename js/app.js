@@ -187,48 +187,36 @@ function renderTodayDuty() {
   const container = document.getElementById('dutyCards');
   if (!container) return;
 
-  const dow = new Date().getDay(); // 0=日〜6=土
-  const shuppinStaff = CONFIG.SHUPPIN_ROTATION[dow] || null;
-  const konpoStaff = CONFIG.KONPO_STAFF || null;
-  const torihikiStaff = CONFIG.TORIHIKI_ROTATION ? CONFIG.TORIHIKI_ROTATION[dow] : null;
+  const dow = new Date().getDay();
+  if (dow === 0 || dow === 6) { container.innerHTML = ''; return; }
 
-  // 土日は当番なし
-  if (dow === 0 || dow === 6) {
-    container.innerHTML = '';
-    return;
-  }
+  const duties = CONFIG.DUTY_ROTATION[dow];
+  if (!duties) { container.innerHTML = ''; return; }
 
   const myName = currentUser?.name || '';
+  const icons = { '分荷撮影': '📷', '出品': '📝', '取引ナビ': '💬', '梱包出荷': '📦' };
+
   let cards = '';
+  for (const [role, staff] of Object.entries(duties)) {
+    if (!staff) continue;
+    const icon = icons[role] || '📋';
 
-  if (shuppinStaff) {
-    const isMine = myName === shuppinStaff;
-    cards += `<div class="duty-card ${isMine ? 'duty-mine' : ''}">
-      <span class="duty-icon">📝</span>
-      <span class="duty-label">出品</span>
-      <span class="duty-name">${escapeHtml(shuppinStaff.split(/[　 ]/)[0])}</span>
-    </div>`;
-  }
-
-  if (torihikiStaff) {
-    const isMine = myName === torihikiStaff;
-    cards += `<div class="duty-card ${isMine ? 'duty-mine' : ''}">
-      <span class="duty-icon">💬</span>
-      <span class="duty-label">取引ナビ</span>
-      <span class="duty-name">${escapeHtml(torihikiStaff.split(/[　 ]/)[0])}</span>
-    </div>`;
-  }
-
-  if (konpoStaff) {
-    // 桃井の出勤日のみ表示
-    const konpoInfo = CONFIG.STAFF.find(s => s.name === konpoStaff);
-    const konpoOff = konpoInfo && konpoInfo.offDays ? konpoInfo.offDays.includes(dow) : false;
-    if (!konpoOff) {
-      const isMine = myName === konpoStaff;
+    if (Array.isArray(staff)) {
+      // 複数人（分荷撮影）
+      const names = staff.map(s => escapeHtml(s.split(/[　 ]/)[0])).join('・');
+      const isMine = staff.includes(myName);
+      cards += `<div class="duty-card duty-wide ${isMine ? 'duty-mine' : ''}">
+        <span class="duty-icon">${icon}</span>
+        <span class="duty-label">${escapeHtml(role)}</span>
+        <span class="duty-name">${names}</span>
+      </div>`;
+    } else {
+      // 1人
+      const isMine = myName === staff;
       cards += `<div class="duty-card ${isMine ? 'duty-mine' : ''}">
-        <span class="duty-icon">📦</span>
-        <span class="duty-label">梱包</span>
-        <span class="duty-name">${escapeHtml(konpoStaff.split(/[　 ]/)[0])}</span>
+        <span class="duty-icon">${icon}</span>
+        <span class="duty-label">${escapeHtml(role)}</span>
+        <span class="duty-name">${escapeHtml(staff.split(/[　 ]/)[0])}</span>
       </div>`;
     }
   }
