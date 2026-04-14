@@ -861,6 +861,22 @@
         </div>
       </div>
 
+      <!-- 使い方ガイド -->
+      <div class="section">
+        <h3 class="section-title collapsible" onclick="toggleSection('guideSection')">📖 使い方ガイド <span id="guideArrow" class="collapse-arrow">▼</span></h3>
+        <div id="guideSection" class="collapsible-body" style="display:none">
+          <div id="featureGuideList"></div>
+        </div>
+      </div>
+
+      <!-- 更新履歴 -->
+      <div class="section">
+        <h3 class="section-title collapsible" onclick="toggleSection('changelogSection')">🔄 更新履歴 <span id="changelogArrow" class="collapse-arrow">▼</span></h3>
+        <div id="changelogSection" class="collapsible-body" style="display:none">
+          <div id="changelogList"></div>
+        </div>
+      </div>
+
       <!-- 管理者用: 権限設定（浅野のみ表示） -->
       <div id="adminPermSection" class="section" style="display:none">
         <h3 class="section-title">🔐 権限設定</h3>

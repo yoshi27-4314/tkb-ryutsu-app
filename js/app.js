@@ -115,6 +115,8 @@ function showMainScreen() {
   loadTheme();
   loadContactInfo();
   initMiniClocks();
+  renderFeatureGuide();
+  renderChangelog();
   const savedTab = localStorage.getItem('f8_current_tab');
   if (savedTab) switchTab(savedTab);
 }
@@ -254,6 +256,16 @@ function updateNoticeList(items) {
   if (!list) return;
 
   const notices = [];
+
+  // アプリ更新通知（未読分）
+  const unreadChanges = getUnreadChanges();
+  unreadChanges.forEach(c => {
+    notices.push({
+      badge: 'notice-update', label: c.type,
+      text: c.text,
+      isUpdate: true,
+    });
+  });
 
   // 承認待ち
   items.filter(i => i.needsApproval && !i.approved && !i.rejected).forEach(i => {
@@ -2454,6 +2466,10 @@ function toggleSection(id) {
   if (el.style.display === 'none') {
     el.style.display = 'block';
     if (arrow) arrow.classList.add('open');
+    // 更新履歴を開いたら既読にする
+    if (id === 'changelogSection') {
+      markChangelogRead();
+    }
   } else {
     el.style.display = 'none';
     if (arrow) arrow.classList.remove('open');
@@ -2526,6 +2542,77 @@ function loadTestData() {
     ];
     testItems.forEach(item => data.items.push(item));
     saveLocalData(data);
+  }
+}
+
+// ====== 機能ガイド・更新履歴 ======
+function renderFeatureGuide() {
+  const container = document.getElementById('featureGuideList');
+  if (!container || !CONFIG.FEATURE_GUIDE) return;
+
+  container.innerHTML = CONFIG.FEATURE_GUIDE.map(f => {
+    const steps = f.steps.map((s, i) => `
+      <div class="guide-step">
+        <span class="guide-step-num">${i + 1}</span>
+        <span>${escapeHtml(s)}</span>
+      </div>
+    `).join('');
+    const note = f.note ? `<div class="guide-note">${escapeHtml(f.note)}</div>` : '';
+    return `
+      <div class="guide-card">
+        <div class="guide-card-header">
+          <span class="guide-icon">${f.icon}</span>
+          <span>${escapeHtml(f.title)}</span>
+        </div>
+        <div class="guide-steps">${steps}</div>
+        ${note}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderChangelog() {
+  const container = document.getElementById('changelogList');
+  if (!container || !CONFIG.CHANGELOG) return;
+
+  container.innerHTML = CONFIG.CHANGELOG.map(entry => {
+    const items = entry.changes.map(c => {
+      let badgeClass = 'changelog-badge-change';
+      if (c.type === '新機能') badgeClass = 'changelog-badge-new';
+      else if (c.type === '修正') badgeClass = 'changelog-badge-fix';
+      else if (c.type === '初版') badgeClass = 'changelog-badge-init';
+      return `
+        <div class="changelog-item">
+          <span class="changelog-badge ${badgeClass}">${escapeHtml(c.type)}</span>
+          <span>${escapeHtml(c.text)}</span>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="changelog-entry">
+        <div class="changelog-date">${escapeHtml(entry.date)}</div>
+        ${items}
+      </div>
+    `;
+  }).join('');
+}
+
+function getUnreadChanges() {
+  if (!CONFIG.CHANGELOG) return [];
+  const lastSeen = localStorage.getItem('f8_last_seen_version') || '';
+  const unread = [];
+  for (const entry of CONFIG.CHANGELOG) {
+    if (entry.version === lastSeen) break;
+    if (entry.notify) {
+      entry.changes.forEach(c => unread.push({ date: entry.date, ...c }));
+    }
+  }
+  return unread;
+}
+
+function markChangelogRead() {
+  if (CONFIG.CHANGELOG && CONFIG.CHANGELOG.length > 0) {
+    localStorage.setItem('f8_last_seen_version', CONFIG.CHANGELOG[0].version);
   }
 }
 
