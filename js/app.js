@@ -635,57 +635,22 @@ function renderMemberTimeline() {
     return;
   }
 
-  const timeToPercent = (timeStr) => {
-    const [h, m] = timeStr.split(':').map(Number);
-    return ((h + m / 60) - timelineStart) / totalHours * 100;
-  };
-
   let html = '';
   members.forEach(m => {
-    const startPct = Math.max(0, timeToPercent(m.start));
-    const endPct = Math.min(100, timeToPercent(m.end));
-    const workWidth = endPct - startPct;
-
-    let breakHtml = '';
-    let breakMeta = '休憩なし';
-    if (m.breakStart && m.breakEnd && !m.noBreak) {
-      const bStartPct = Math.max(startPct, timeToPercent(m.breakStart));
-      const bEndPct = Math.min(endPct, timeToPercent(m.breakEnd));
-      breakHtml = `<div class="member-bar-break" style="left:${bStartPct}%;width:${bEndPct - bStartPct}%"></div>`;
-      breakMeta = `休憩 ${m.breakStart}-${m.breakEnd}`;
-    } else if (m.noBreak) {
-      breakMeta = '休憩なし';
-    } else {
-      // デフォルト休憩（12:00-13:00）
-      const bStartPct = Math.max(startPct, timeToPercent('12:00'));
-      const bEndPct = Math.min(endPct, timeToPercent('13:00'));
-      if (bStartPct < bEndPct) {
-        breakHtml = `<div class="member-bar-break" style="left:${bStartPct}%;width:${bEndPct - bStartPct}%"></div>`;
-      }
-      breakMeta = '休憩 12:00-13:00';
-    }
-
-    // 姓だけ表示
     const lastName = m.name.split(/[　 ]/)[0];
+    const breakText = m.noBreak ? '休憩なし' : '';
+    const company = CONFIG.STAFF.find(s => s.name === m.name)?.company;
+    const companyBadge = company ? `<span class="member-company">${company}</span>` : '';
+
     html += `
-      <div class="member-row">
-        <div class="member-name">${escapeHtml(lastName)}</div>
-        <div class="member-bar-container">
-          <div class="member-bar-work" style="left:${startPct}%;width:${workWidth}%"></div>
-          ${breakHtml}
-        </div>
-        <div class="member-meta">${m.start}-${m.end}</div>
+      <div class="member-list-item">
+        <span class="member-list-name">${escapeHtml(lastName)}</span>
+        ${companyBadge}
+        <span class="member-list-time">${m.start} - ${m.end}</span>
+        <span class="member-list-break">${breakText}</span>
       </div>
     `;
   });
-
-  // 時間軸（バーと同じ座標系で配置）
-  html += '<div class="member-time-axis" style="position:relative;height:16px;margin-left:64px;margin-right:50px;">';
-  for (let h = timelineStart; h <= timelineEnd; h += 3) {
-    const pct = ((h - timelineStart) / totalHours * 100);
-    html += `<span class="member-time-tick" style="position:absolute;left:${pct}%;transform:translateX(-50%)">${h}:00</span>`;
-  }
-  html += '</div>';
 
   container.innerHTML = html;
 }

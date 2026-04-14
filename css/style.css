@@ -801,31 +801,20 @@ body[data-theme="female"] {
 .collapse-count { font-size: 12px; font-weight: 400; color: var(--sub); margin-left: 8px; }
 .collapsible-body { overflow: hidden; }
 
-/* 出勤メンバータイムライン */
-.member-timeline { display: flex; flex-direction: column; gap: 6px; }
-.member-row { display: flex; align-items: center; gap: 8px; height: 28px; }
-.member-name { font-size: 11px; font-weight: 600; color: var(--text); min-width: 56px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.member-bar-container {
-  position: relative; height: 18px; background: #eee; border-radius: 4px; overflow: hidden; flex: 1;
+/* 出勤メンバーリスト */
+.member-timeline { display: flex; flex-wrap: wrap; gap: 6px; }
+.member-list-item {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; background: var(--card); border-radius: 16px;
+  font-size: 12px; box-shadow: 0 1px 2px var(--shadow);
 }
-.member-bar-work {
-  position: absolute; top: 0; height: 100%; background: var(--primary); border-radius: 4px;
-  opacity: 0.85;
+.member-list-name { font-weight: 600; color: var(--text); }
+.member-list-time { color: var(--sub); }
+.member-company {
+  font-size: 9px; color: var(--sub); background: rgba(0,0,0,0.05);
+  padding: 0 4px; border-radius: 3px;
 }
-.member-bar-break {
-  position: absolute; top: 0; height: 100%; background: var(--bg);
-  border-left: 1px dashed var(--sub); border-right: 1px dashed var(--sub);
-}
-.member-bar-label {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  font-size: 9px; color: #fff; font-weight: 600; padding: 0 4px;
-  white-space: nowrap;
-}
-.member-time-axis {
-  position: relative; height: 16px; margin-left: 64px; margin-right: 50px;
-}
-.member-time-tick { font-size: 8px; color: var(--sub); position: absolute; transform: translateX(-50%); }
-.member-meta { font-size: 10px; color: var(--sub); min-width: 50px; flex-shrink: 0; white-space: nowrap; }
+.member-list-break { font-size: 9px; color: var(--sub); }
 
 /* 権限設定 */
 .perm-checklist { display: flex; flex-direction: column; gap: 0; }
@@ -1068,22 +1057,22 @@ body[data-theme="female"] {
 
 /* 今日の当番 */
 .duty-cards {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  display: flex; flex-wrap: wrap; gap: 6px;
 }
 .duty-card {
-  flex: 1; background: var(--card); border-radius: 10px;
-  padding: 10px 8px; text-align: center;
-  box-shadow: 0 1px 3px var(--shadow);
-  border: 2px solid transparent;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--card); border-radius: 16px;
+  padding: 5px 12px; box-shadow: 0 1px 2px var(--shadow);
+  border: 1.5px solid transparent; font-size: 12px;
 }
 .duty-card.duty-mine {
   border-color: var(--gold); background: rgba(197,162,88,0.08);
 }
-.duty-icon { font-size: 18px; display: block; }
-.duty-label { font-size: 10px; color: var(--sub); display: block; margin-top: 2px; }
-.duty-name { font-size: 14px; font-weight: 700; color: var(--text); display: block; margin-top: 2px; }
-.duty-wide { grid-column: 1 / -1; }
-.duty-wide .duty-name { font-size: 13px; }
+.duty-icon { font-size: 14px; }
+.duty-label { color: var(--sub); font-size: 11px; }
+.duty-name { font-weight: 700; color: var(--text); }
+.duty-wide { }
+.duty-wide .duty-name { font-size: 12px; }
 
 /* 状態確認 */
 .check-item {
