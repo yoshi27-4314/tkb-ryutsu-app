@@ -11,7 +11,7 @@ const CONFIG = {
   // GAS（スプレッドシート書き込み）
   GAS_URL: 'https://script.google.com/macros/s/AKfycbx9JpYWvi3p0HgA9Bb0RLgEjkgzbF6iJRuAX7Ks2VL3hwIEnpuTR0J1ydtxegGKRXjh/exec',
   // テスト用GAS（テスト用スプレッドシートに書き込み）
-  GAS_URL_TEST: 'https://script.google.com/macros/s/AKfycbx9JpYWvi3p0HgA9Bb0RLgEjkgzbF6iJRuAX7Ks2VL3hwIEnpuTR0J1ydtxegGKRXjh/exec',
+  GAS_URL_TEST: 'https://script.google.com/macros/s/AKfycbyyx7Ew4LaCP7L21j6J5PACxnIIifkyrjTHSTr_roSpEHYSeJLUt5StORtSM_2xCbYWnA/exec',
 
   // 販売チャンネル
   // type: tsuhan=出品が必要, non-tsuhan=出品不要
