@@ -1027,31 +1027,38 @@ function consultAsano() {
   });
 }
 
-// ====== 撮影ガイド ======
+// ====== 出品用商品写真撮影 ======
 function buildPhotoGuide() {
-  const guides = currentItem.photoGuide || [
+  // 1枚目から出品用として撮り直し
+  const defaultGuides = [
+    { title: '全体写真（出品メイン画像）', description: '背景を整えて商品全体を撮影。これが一覧に表示されます' },
     { title: '型番・メーカーラベル', description: '底面や背面のラベルを撮影' },
     { title: '状態の詳細', description: '傷・汚れ・動作状態がわかる写真' },
   ];
+  // AIからの追加ガイドがあれば追加
+  const aiGuides = currentItem.photoGuide || [];
+  const guides = [...defaultGuides, ...aiGuides.filter(g =>
+    !defaultGuides.some(d => d.title === g.title)
+  )];
 
   const list = document.getElementById('photoGuideList');
   list.innerHTML = '';
   guides.forEach((g, i) => {
+    const num = i + 1;
     const div = document.createElement('div');
     div.className = 'photo-guide-item';
     div.innerHTML = `
-      <div class="photo-guide-num" id="guideNum${i+2}">${i+2}</div>
+      <div class="photo-guide-num" id="guideNum${num}">${num}</div>
       <div class="photo-guide-text">
         <div class="photo-guide-title">${escapeHtml(g.title)}</div>
         <div class="photo-guide-desc">${escapeHtml(g.description)}</div>
       </div>
-      <button class="photo-guide-btn" id="guideBtn${i+2}" onclick="takeGuidePhoto(${i+2})">📷 撮影</button>
+      <button class="photo-guide-btn" id="guideBtn${num}" onclick="takeGuidePhoto(${num})">📷 撮影</button>
     `;
     list.appendChild(div);
   });
 
   photosTaken = 0;
-  // 「次へ」ボタンは常に表示（追加撮影はオプション）
   document.getElementById('afterAllPhotos').style.display = 'block';
 }
 
