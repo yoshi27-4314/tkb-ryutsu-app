@@ -473,7 +473,7 @@
             <span class="camera-start-icon">📷</span>
             <span>写真で登録</span>
           </button>
-          <button class="camera-start-btn" onclick="startBarcodeEntry()" style="background:var(--primary)">
+          <button id="barcodeBtnEntry" class="camera-start-btn" onclick="startBarcodeEntry()" style="background:var(--primary)">
             <span class="camera-start-icon">📱</span>
             <span>バーコードで登録（本など）</span>
           </button>
@@ -678,20 +678,22 @@
         </div>
         <div class="chat-input-area">
           <div class="chat-mention-row">
-            <label style="font-size:12px; color:var(--sub);">宛先</label>
-            <select id="chatMention" class="chat-mention-select">
-              <option value="">@メンションを選択</option>
-              <option value="AI">🤖 AIアシスタント</option>
-              <option value="浅野儀頼">👤 浅野儀頼</option>
-              <option value="全員">📢 全員</option>
-              <option value="林和人">👤 林和人</option>
-              <option value="横山優">👤 横山優</option>
-              <option value="平野光雄">👤 平野光雄</option>
-              <option value="三島圭織">👤 三島圭織</option>
-              <option value="桃井侑菜">👤 桃井侑菜</option>
-              <option value="伊藤佐和子">👤 伊藤佐和子</option>
-              <option value="奥村亜優李">👤 奥村亜優李</option>
-            </select>
+            <label style="font-size:12px; color:var(--sub);">宛先（複数選択OK）</label>
+            <div class="mention-selector" id="mentionSelector">
+              <button class="mention-toggle" id="mentionToggleBtn" onclick="toggleMentionList()">@メンションを選択 ▼</button>
+              <div class="mention-list" id="mentionList" style="display:none">
+                <label class="mention-item"><input type="checkbox" value="AI"> 🤖 AIアシスタント</label>
+                <label class="mention-item"><input type="checkbox" value="浅野儀頼"> 👤 浅野儀頼</label>
+                <label class="mention-item"><input type="checkbox" value="全員"> 📢 全員</label>
+                <label class="mention-item"><input type="checkbox" value="林和人"> 👤 林和人</label>
+                <label class="mention-item"><input type="checkbox" value="横山優"> 👤 横山優</label>
+                <label class="mention-item"><input type="checkbox" value="平野光雄"> 👤 平野光雄</label>
+                <label class="mention-item"><input type="checkbox" value="三島圭織"> 👤 三島圭織</label>
+                <label class="mention-item"><input type="checkbox" value="桃井侑菜"> 👤 桃井侑菜</label>
+                <label class="mention-item"><input type="checkbox" value="伊藤佐和子"> 👤 伊藤佐和子</label>
+                <label class="mention-item"><input type="checkbox" value="奥村亜優李"> 👤 奥村亜優李</label>
+              </div>
+            </div>
           </div>
           <div class="chat-input-row">
             <input type="text" id="chatInput" placeholder="メッセージを入力..." class="chat-input">
@@ -856,6 +858,19 @@
               <button class="btn btn-primary" onclick="applyClockPicker()" style="flex:1">決定</button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- 管理者用: 権限設定（浅野のみ表示） -->
+      <div id="adminPermSection" class="section" style="display:none">
+        <h3 class="section-title">🔐 権限設定</h3>
+        <div class="perm-group">
+          <h4 style="font-size:14px; color:var(--gold); margin-bottom:8px;">📱 バーコード登録（本）</h4>
+          <p style="font-size:12px; color:var(--sub); margin-bottom:8px;">チェックしたスタッフがバーコード機能を使えます</p>
+          <div id="permBarcodeList" class="perm-checklist">
+            <!-- JSで動的に生成 -->
+          </div>
+          <button class="btn btn-primary" onclick="savePermissionSettings()" style="margin-top:12px; font-size:14px;">💾 権限を保存</button>
         </div>
       </div>
 

@@ -16,6 +16,31 @@ let todayStats = { bunka: 0, satsuei: 0, shuppin: 0, konpo: 0 };
 // ローカルストレージキー
 const STORAGE_KEY = 'f8_takeback_data';
 const LOGIN_KEY = 'f8_takeback_user';
+const PERMISSIONS_KEY = 'f8_permissions';
+
+// ====== 権限管理 ======
+// デフォルト権限: バーコードは桃井・浅野のみ
+const DEFAULT_PERMISSIONS = {
+  barcode: ['桃井侑菜', '浅野儀頼'],
+};
+
+function loadPermissions() {
+  try {
+    return JSON.parse(localStorage.getItem(PERMISSIONS_KEY)) || DEFAULT_PERMISSIONS;
+  } catch { return DEFAULT_PERMISSIONS; }
+}
+
+function savePermissions(perms) {
+  localStorage.setItem(PERMISSIONS_KEY, JSON.stringify(perms));
+}
+
+function hasPermission(feature) {
+  if (!currentUser) return false;
+  if (currentUser.isAdmin) return true; // 管理者は全機能利用可
+  const perms = loadPermissions();
+  const allowed = perms[feature] || [];
+  return allowed.includes(currentUser.name);
+}
 
 // ====== データ管理（ローカル） ======
 function loadLocalData() {
@@ -73,6 +98,12 @@ function showMainScreen() {
   }
   if (currentUser.isAdmin) {
     document.getElementById('notifBadge').style.display = 'flex';
+    // 管理者用: 権限設定セクション表示
+    const adminPerm = document.getElementById('adminPermSection');
+    if (adminPerm) {
+      adminPerm.style.display = '';
+      renderPermissionSettings();
+    }
   }
   updateDate();
   // loadTestData(); // テストデータ無効化（実運用モード）
@@ -617,6 +648,12 @@ function selectCategory(cat) {
   }
 
   showCameraStep(1);
+
+  // バーコードボタンの表示制御
+  const barcodeBtn = document.getElementById('barcodeBtnEntry');
+  if (barcodeBtn) {
+    barcodeBtn.style.display = hasPermission('barcode') ? '' : 'none';
+  }
 }
 
 function backToCategory() {
@@ -1074,32 +1111,75 @@ async function sendToGAS(payload) {
 }
 
 // ====== チャット ======
+function getSelectedMentions() {
+  const checkboxes = document.querySelectorAll('#mentionList input[type="checkbox"]:checked');
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function toggleMentionList() {
+  const list = document.getElementById('mentionList');
+  list.style.display = list.style.display === 'none' ? '' : 'none';
+}
+
+function updateMentionButton() {
+  const selected = getSelectedMentions();
+  const btn = document.getElementById('mentionToggleBtn');
+  if (selected.length === 0) {
+    btn.textContent = '@メンションを選択 ▼';
+  } else {
+    btn.textContent = selected.map(s => '@' + s).join(', ') + ' ▼';
+  }
+}
+
+// チェックボックス変更時にボタン表示を更新
+document.addEventListener('change', (e) => {
+  if (e.target.closest('#mentionList')) {
+    updateMentionButton();
+  }
+});
+
+// メンションリスト外タップで閉じる
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.mention-selector')) {
+    const list = document.getElementById('mentionList');
+    if (list) list.style.display = 'none';
+  }
+});
+
 function sendChat() {
-  const mention = document.getElementById('chatMention').value;
+  const mentions = getSelectedMentions();
   const input = document.getElementById('chatInput');
   const msg = input.value.trim();
 
-  if (!mention) { showToast('宛先（@メンション）を選択してください'); return; }
+  if (mentions.length === 0) { showToast('宛先（@メンション）を選択してください'); return; }
   if (!msg) return;
 
-  const displayMsg = `@${mention} ${msg}`;
-  addChatMessage(displayMsg, 'user');
+  const mentionDisplay = mentions.map(m => '@' + m).join(' ');
+  addChatMessage(`${mentionDisplay} ${msg}`, 'user');
   input.value = '';
 
-  if (mention === 'AI') {
-    // AIに質問
+  // AI宛があればAIに質問
+  if (mentions.includes('AI')) {
     chatWithAI(msg);
-  } else {
-    // 人宛のメッセージ → GASに送信して通知
+  }
+
+  // 人宛のメッセージ → GASに送信
+  const humanMentions = mentions.filter(m => m !== 'AI');
+  if (humanMentions.length > 0) {
     sendToGAS({
       action: 'chat_message',
       from: currentUser.name,
-      to: mention,
+      to: humanMentions.join(', '),
       message: msg,
       timestamp: formatTimestamp(),
     });
-    addChatMessage(`${mention}さんにメッセージを送信しました`, 'bot');
+    if (!mentions.includes('AI')) {
+      addChatMessage(`${humanMentions.join('さん、')}さんにメッセージを送信しました`, 'bot');
+    }
   }
+
+  // メンションリストを閉じる
+  document.getElementById('mentionList').style.display = 'none';
 }
 
 async function chatWithAI(msg) {
@@ -2434,6 +2514,46 @@ function loadTestData() {
     testItems.forEach(item => data.items.push(item));
     saveLocalData(data);
   }
+}
+
+// ====== 権限設定画面（管理者用） ======
+function renderPermissionSettings() {
+  const container = document.getElementById('permBarcodeList');
+  if (!container) return;
+
+  const perms = loadPermissions();
+  const barcodeAllowed = perms.barcode || [];
+
+  // 浅野以外のスタッフ一覧でチェックリスト生成
+  const staffList = CONFIG.STAFF.filter(s => s.name !== '浅野儀頼');
+  container.innerHTML = staffList.map(s => {
+    const checked = barcodeAllowed.includes(s.name) ? 'checked' : '';
+    const role = s.role === 'admin' ? '管理者' : 'スタッフ';
+    return `
+      <div class="perm-check-item">
+        <input type="checkbox" id="perm_barcode_${s.name}" ${checked}>
+        <label for="perm_barcode_${s.name}">${s.name}</label>
+        <span class="perm-role">${role}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function savePermissionSettings() {
+  const perms = loadPermissions();
+  const staffList = CONFIG.STAFF.filter(s => s.name !== '浅野儀頼');
+
+  const barcodeAllowed = ['浅野儀頼']; // 浅野は常に許可
+  staffList.forEach(s => {
+    const cb = document.getElementById('perm_barcode_' + s.name);
+    if (cb && cb.checked) {
+      barcodeAllowed.push(s.name);
+    }
+  });
+
+  perms.barcode = barcodeAllowed;
+  savePermissions(perms);
+  showToast('権限を保存しました');
 }
 
 // ====== 初期化 ======

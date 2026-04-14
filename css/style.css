@@ -810,3 +810,51 @@ body[data-theme="female"] {
 }
 .member-time-tick { font-size: 8px; color: var(--sub); }
 .member-meta { font-size: 10px; color: var(--sub); min-width: 50px; flex-shrink: 0; white-space: nowrap; }
+
+/* 権限設定 */
+.perm-checklist { display: flex; flex-direction: column; gap: 8px; }
+.perm-check-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--primary); border-radius: 8px; padding: 10px 14px;
+}
+.perm-check-item input[type="checkbox"] {
+  width: 20px; height: 20px; accent-color: var(--gold); flex-shrink: 0;
+}
+.perm-check-item label {
+  font-size: 14px; color: var(--text); cursor: pointer; flex: 1;
+}
+.perm-check-item .perm-role {
+  font-size: 11px; color: var(--sub); margin-left: auto;
+}
+
+/* メンション複数選択 */
+.mention-selector { position: relative; width: 100%; }
+.mention-toggle {
+  width: 100%; padding: 8px 12px; background: var(--primary); color: var(--text);
+  border: 1px solid #2A3553; border-radius: 8px; font-size: 13px;
+  text-align: left; cursor: pointer;
+}
+.mention-list {
+  position: absolute; bottom: 100%; left: 0; right: 0;
+  background: var(--primary); border: 1px solid #2A3553; border-radius: 8px;
+  max-height: 240px; overflow-y: auto; z-index: 50;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+  margin-bottom: 4px;
+}
+.mention-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; font-size: 13px; color: var(--text); cursor: pointer;
+  border-bottom: 1px solid #1a2035;
+}
+.mention-item:last-child { border-bottom: none; }
+.mention-item:active { background: #2A3553; }
+.mention-item input[type="checkbox"] {
+  width: 18px; height: 18px; accent-color: var(--gold); flex-shrink: 0;
+}
+.mention-selected-tags {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;
+}
+.mention-tag {
+  background: var(--gold); color: var(--primary); font-size: 11px;
+  padding: 2px 8px; border-radius: 10px; font-weight: 700;
+}
