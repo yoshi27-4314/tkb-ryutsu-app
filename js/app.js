@@ -2615,15 +2615,15 @@ function renderPermissionSettings() {
 
   // 浅野以外のスタッフ一覧でチェックリスト生成
   const staffList = CONFIG.STAFF.filter(s => s.name !== '浅野儀頼');
-  container.innerHTML = staffList.map(s => {
+  container.innerHTML = staffList.map((s, i) => {
     const checked = barcodeAllowed.includes(s.name) ? 'checked' : '';
     const role = s.role === 'admin' ? '管理者' : 'スタッフ';
     return `
-      <div class="perm-check-item">
-        <input type="checkbox" id="perm_barcode_${s.name}" ${checked}>
-        <label for="perm_barcode_${s.name}">${s.name}</label>
+      <label class="perm-row" onclick="event.stopPropagation()">
+        <input type="checkbox" data-staff="${escapeHtml(s.name)}" ${checked} class="perm-cb">
+        <span class="perm-name">${escapeHtml(s.name)}</span>
         <span class="perm-role">${role}</span>
-      </div>
+      </label>
     `;
   }).join('');
 }
@@ -2633,11 +2633,9 @@ function savePermissionSettings() {
   const staffList = CONFIG.STAFF.filter(s => s.name !== '浅野儀頼');
 
   const barcodeAllowed = ['浅野儀頼']; // 浅野は常に許可
-  staffList.forEach(s => {
-    const cb = document.getElementById('perm_barcode_' + s.name);
-    if (cb && cb.checked) {
-      barcodeAllowed.push(s.name);
-    }
+  document.querySelectorAll('.perm-cb:checked').forEach(cb => {
+    const name = cb.dataset.staff;
+    if (name) barcodeAllowed.push(name);
   });
 
   perms.barcode = barcodeAllowed;

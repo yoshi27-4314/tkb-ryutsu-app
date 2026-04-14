@@ -812,19 +812,21 @@ body[data-theme="female"] {
 .member-meta { font-size: 10px; color: var(--sub); min-width: 50px; flex-shrink: 0; white-space: nowrap; }
 
 /* 権限設定 */
-.perm-checklist { display: flex; flex-direction: column; gap: 8px; }
-.perm-check-item {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--primary); border-radius: 8px; padding: 10px 14px;
+.perm-checklist { display: flex; flex-direction: column; gap: 0; }
+.perm-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.perm-check-item input[type="checkbox"] {
-  width: 20px; height: 20px; accent-color: var(--gold); flex-shrink: 0;
+.perm-row:active { background: rgba(255,255,255,0.04); }
+.perm-cb {
+  width: 22px; height: 22px; accent-color: var(--gold); flex-shrink: 0;
 }
-.perm-check-item label {
-  font-size: 14px; color: var(--text); cursor: pointer; flex: 1;
+.perm-name {
+  font-size: 15px; color: #fff; flex: 1;
 }
-.perm-check-item .perm-role {
-  font-size: 11px; color: var(--sub); margin-left: auto;
+.perm-role {
+  font-size: 12px; color: #8892A4;
 }
 
 /* 機能ガイド */
