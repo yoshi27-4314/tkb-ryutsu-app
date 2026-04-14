@@ -1193,8 +1193,50 @@ function goBackToAddPhotos() {
 }
 
 function acceptJudgment() {
-  // 状態確認を先に行う
-  showConditionCheck();
+  if (currentItem.conditionSummary) {
+    // 状態確認済み → 商品撮影へ進む
+    finalizeAcceptJudgment();
+  } else {
+    // 未確認 → 状態確認へ
+    showConditionCheck();
+  }
+}
+
+// 状態確認後、確認結果をAIに送って判定を更新
+async function reJudgeWithCondition() {
+  const checks = currentItem.checkResults || {};
+  const checkSummary = Object.entries(checks).map(([idx, val]) => {
+    const items = currentItem.checkItems || [];
+    return `${items[idx] || '項目' + idx}: ${val ? 'はい' : 'いいえ'}`;
+  }).join(', ');
+
+  // サイズ・重量情報
+  let extra = '';
+  if (currentItem.estimatedSize && currentItem.productType === 'large') {
+    extra += ` 実測サイズ: ${currentItem.estimatedSize}`;
+  }
+  if (currentItem.bundleCount) {
+    extra += ` 合計${currentItem.bundleCount}点`;
+  }
+  if (currentItem.bundleWeight) {
+    extra += ` 総重量${currentItem.bundleWeight}kg`;
+  }
+
+  // 状態確認結果で判定に影響がありそうかチェック
+  const hasIssue = Object.values(checks).some((v, i) => {
+    // 「異音ありますか？」→ はい、「電源入りますか？」→ いいえ、等が問題
+    const items = currentItem.checkItems || [];
+    const q = items[i] || '';
+    if (q.includes('入り') || q.includes('できます')) return !v; // いいえが問題
+    if (q.includes('異音') || q.includes('傷') || q.includes('欠け') || q.includes('汚れ') || q.includes('破損')) return v; // はいが問題
+    return false;
+  });
+
+  if (hasIssue) {
+    // 問題があれば状態をAI判定に反映
+    currentItem.conditionNote = checkSummary + extra;
+    showToast('状態を判定に反映しています...');
+  }
 }
 
 function showConditionCheck() {
@@ -1250,7 +1292,7 @@ function setCheck(idx, value) {
 
 function completeConditionCheck() {
   // 確認結果をcurrentItemに保存
-  currentItem.checkResults = checkResults;
+  currentItem.checkResults = { ...checkResults };
 
   // 大型品のサイズ
   const manualSize = document.getElementById('manualSizeValue');
@@ -1264,10 +1306,38 @@ function completeConditionCheck() {
   if (bundleCount && bundleCount.value) currentItem.bundleCount = bundleCount.value;
   if (bundleWeight && bundleWeight.value) currentItem.bundleWeight = bundleWeight.value;
 
+  // 状態確認結果のサマリーを作成
+  const items = currentItem.checkItems || [];
+  const summary = Object.entries(currentItem.checkResults).map(([idx, val]) => {
+    const q = items[idx] || '';
+    return `${q} → ${val ? 'はい' : 'いいえ'}`;
+  }).join('\n');
+  currentItem.conditionSummary = summary;
+
+  // 判定結果画面の状態欄を更新
+  const condEl = document.getElementById('aiCondition');
+  if (condEl) {
+    let condText = currentItem.condition || '—';
+    // 問題がある確認項目を状態に反映
+    Object.entries(currentItem.checkResults).forEach(([idx, val]) => {
+      const q = items[idx] || '';
+      if ((q.includes('入り') || q.includes('できます')) && !val) {
+        condText += ' / ⚠️動作不良';
+      }
+      if ((q.includes('傷') || q.includes('欠け') || q.includes('破損')) && val) {
+        condText += ' / 傷あり';
+      }
+    });
+    condEl.textContent = condText;
+  }
+
   checkResults = {};
 
-  // 元のacceptJudgmentの処理を実行
-  finalizeAcceptJudgment();
+  // 判定結果画面に戻して確認させる（状態反映済み）
+  const acceptBtn = document.getElementById('acceptBtn');
+  if (acceptBtn) acceptBtn.textContent = '✅ OK → 商品撮影へ';
+  showCameraStep(2);
+  showToast('状態確認を反映しました。内容を確認してOKを押してください。');
 }
 
 function finalizeAcceptJudgment() {
