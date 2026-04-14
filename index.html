@@ -568,7 +568,7 @@
         <div id="photoMode" style="display:none">
           <div class="camera-guide">
             <h3>📷 商品の写真を撮影</h3>
-            <p class="photo-tip">1枚目は<strong>基準物（テプラ等）を横に置いて全体</strong>を撮影。<br>判定精度を上げるなら、型番ラベル・裏面・傷など<strong>最大5枚</strong>まで追加できます。</p>
+            <p class="photo-tip"><strong>カッティングボード（方眼）の上に商品を置いて</strong>撮影。<br>品番があれば1枚でOK。古道具・ビンテージは追加写真で判定精度UP。</p>
           </div>
           <!-- 写真プレビューグリッド -->
           <div class="photo-grid" id="photoGrid">
@@ -690,6 +690,7 @@
             </div>
             <p style="font-size:12px; color:var(--danger); margin-top:4px;">※ 出品前に確定してください</p>
           </div>
+          <div id="needsMorePhotosMsg" class="needs-more-photos" style="display:none"></div>
           <div class="ai-actions">
             <button class="btn btn-primary" onclick="acceptJudgment()">✅ OK</button>
             <button class="btn btn-warn" onclick="consultAsano()">🙋 相談する</button>

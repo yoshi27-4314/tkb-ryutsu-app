@@ -895,6 +895,16 @@ async function analyzePhoto() {
       if (anbunEl) anbunEl.style.display = currentCategory === 'watanabe' ? 'block' : 'none';
       // 単品/まとめのリセット
       selectBundle('single');
+      // 追加写真が必要な場合の表示
+      const morePhotosEl = document.getElementById('needsMorePhotosMsg');
+      if (morePhotosEl) {
+        if (j.needsMorePhotos && multiPhotos.filter(p => p).length <= 1) {
+          morePhotosEl.style.display = '';
+          morePhotosEl.innerHTML = `⚠️ ${j.morePhotosReason || '古道具・ビンテージ品の可能性があります。追加写真で判定精度が上がります。'}<br><button class="btn btn-outline" onclick="goBackToAddPhotos()" style="margin-top:8px; font-size:13px;">📷 写真を追加して再判定</button>`;
+        } else {
+          morePhotosEl.style.display = 'none';
+        }
+      }
       showCameraStep(2);
     } else if (result.error) {
       showToast('判定エラー: ' + result.error);
@@ -909,6 +919,12 @@ async function analyzePhoto() {
     const photoCount = multiPhotos.filter(p => p !== null).length;
     if (btn) { btn.disabled = false; btn.textContent = `🤖 AIに判定させる（${photoCount}枚）`; }
   }
+}
+
+function goBackToAddPhotos() {
+  showCameraStep(1);
+  document.getElementById('entrySelect').style.display = 'none';
+  document.getElementById('photoMode').style.display = 'block';
 }
 
 function acceptJudgment() {
