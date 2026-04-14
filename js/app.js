@@ -376,9 +376,11 @@ function showMainScreen() {
       adminPerm.style.display = '';
       renderPermissionSettings();
     }
-    // 管理者は出退勤・出勤状況を非表示
-    const attendSection = document.getElementById('attendanceSection');
-    if (attendSection) attendSection.style.display = 'none';
+    // 管理者は出退勤・休み連絡・個人実績を非表示
+    ['attendanceSection', 'leaveRequestSection', 'myTodaySection'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
   }
   updateDate();
   // loadTestData(); // テストデータ無効化（実運用モード）
