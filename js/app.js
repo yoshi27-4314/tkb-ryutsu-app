@@ -570,9 +570,9 @@ function updateBottleneck(items) {
 }
 
 function updateBottleneckUI(inv) {
-  const satsueiWait = (inv['分荷確定'] || 0);
+  const satsueiWait = (inv['分荷確定'] || inv['撮影待ち'] || 0);
   const shuppinWait = (inv['出品待ち'] || 0);
-  const konpoWait = (inv['梱包作業'] || 0);
+  const konpoWait = (inv['梱包作業'] || inv['梱包待ち'] || 0);
 
   const maxItems = 200;
 
