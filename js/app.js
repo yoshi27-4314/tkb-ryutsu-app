@@ -2543,15 +2543,59 @@ function requestAttendanceCorrection() {
 }
 
 // ====== 在庫検索 ======
-function searchStock() {
+async function searchStock() {
   const q = document.getElementById('stockSearch').value.trim();
   if (!q) return;
-  const items = getItems();
-  const results = items.filter(i =>
+
+  showToast('🔍 検索中...');
+
+  // ローカルデータから検索
+  const localItems = getItems();
+  let results = localItems.filter(i =>
     (i.productName && i.productName.includes(q)) ||
     (i.mgmtNum && i.mgmtNum.includes(q)) ||
     (i.maker && i.maker.includes(q))
   );
+
+  // スプレッドシート（商品マスタ）からも検索
+  try {
+    const res = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/takeback-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': CONFIG.SUPABASE_ANON_KEY },
+      body: JSON.stringify({ type: 'master', sheet: '商品マスタ' }),
+    });
+    const data = await res.json();
+    if (data.success && data.data?.sheets?.[0]) {
+      const rows = data.data.sheets[0].rows;
+      const headers = data.data.sheets[0].headers;
+      const ssResults = rows.filter(r =>
+        r.some(cell => String(cell).includes(q))
+      ).map(r => ({
+        mgmtNum: r[0] || '',
+        productName: r[1] || '',
+        maker: r[2] || '',
+        modelNumber: r[3] || '',
+        condition: r[4] || '',
+        channel: r[5] || '',
+        estimatedPrice: r[6] ? { min: 0, max: parseInt(r[6]) || 0 } : null,
+        location: r[8] || '',
+        status: r[9] || '',
+        staffName: r[10] || '',
+        driveUrl: r[17] || '',
+        dataSource: r[18] || '',
+        fromSpreadsheet: true,
+      }));
+      // ローカルと重複しないものだけ追加
+      ssResults.forEach(sr => {
+        if (!results.find(r => r.mgmtNum && r.mgmtNum === sr.mgmtNum)) {
+          results.push(sr);
+        }
+      });
+    }
+  } catch(e) {
+    console.log('スプレッドシート検索エラー:', e);
+  }
+
   if (results.length === 0) {
     showToast('「' + q + '」は見つかりませんでした');
   } else {
