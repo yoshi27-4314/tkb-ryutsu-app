@@ -55,6 +55,9 @@ const CONFIG = {
     return String(now.getFullYear()).slice(2) + String(now.getMonth() + 1).padStart(2, '0');
   },
 
+  // トイレ掃除ローテーション（浅野・三島を除く出勤メンバーで日替わり）
+  CLEANING_EXCLUDED: ['浅野儀頼', '三島圭織'],
+
   // 当番ローテーション（曜日: 0=日〜6=土）
   // null = その曜日は該当なし
   DUTY_ROTATION: {

@@ -667,19 +667,28 @@ function renderMemberTimeline() {
     return;
   }
 
+  // トイレ掃除ローテーション（日付ベースで決定）
+  const excluded = CONFIG.CLEANING_EXCLUDED || [];
+  const cleaningCandidates = members.filter(m => !excluded.includes(m.name)).map(m => m.name);
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+  const cleaningPerson = cleaningCandidates.length > 0
+    ? cleaningCandidates[dayOfYear % cleaningCandidates.length]
+    : null;
+
   let html = '';
   members.forEach(m => {
     const lastName = m.name.split(/[　 ]/)[0];
-    const breakText = m.noBreak ? '休憩なし' : '';
     const company = CONFIG.STAFF.find(s => s.name === m.name)?.company;
     const companyBadge = company ? `<span class="member-company">${company}</span>` : '';
+    const isCleaning = m.name === cleaningPerson;
+    const cleaningMark = isCleaning ? '<span class="cleaning-mark" title="トイレ掃除当番">🧹</span>' : '';
 
     html += `
       <div class="member-list-item">
         <span class="member-list-name">${escapeHtml(lastName)}</span>
+        ${cleaningMark}
         ${companyBadge}
         <span class="member-list-time">${m.start} - ${m.end}</span>
-        <span class="member-list-break">${breakText}</span>
       </div>
     `;
   });
