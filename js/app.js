@@ -2837,29 +2837,180 @@ function submitLeaveRequest() {
   renderLeaveHistory();
 }
 
+let leaveGroupMode = 'date';
+let leaveViewMode = 'list';
+
+function getAllLeaveRequests() {
+  return JSON.parse(localStorage.getItem('f8_leave_requests') || '[]');
+}
+
 function renderLeaveHistory() {
-  const container = document.getElementById('leaveHistory');
+  // スタッフ用：自分の申告リスト
+  const container = document.getElementById('leaveMyList');
   if (!container) return;
-  const requests = JSON.parse(localStorage.getItem('f8_leave_requests') || '[]');
-  // 自分のリクエストだけ、直近5件
-  const mine = requests.filter(r => r.staffName === currentUser?.name).slice(0, 5);
+  const requests = getAllLeaveRequests();
+  const mine = requests.filter(r => r.staffName === currentUser?.name).slice(0, 10);
 
   if (mine.length === 0) {
-    container.innerHTML = '';
+    container.innerHTML = '<p style="font-size:12px; color:var(--sub);">まだ連絡はありません</p>';
+  } else {
+    container.innerHTML = '<p style="font-size:12px; color:var(--sub); margin-bottom:6px;">申告履歴</p>' +
+      mine.map(r => {
+        const timeInfo = r.time ? `（${r.time}）` : '';
+        const reasonInfo = r.reason ? ` — ${escapeHtml(r.reason)}` : '';
+        const status = r.approved
+          ? '<span class="leave-status leave-status-approved">承諾</span>'
+          : '<span class="leave-status leave-status-pending">未承諾</span>';
+        return `
+          <div class="leave-my-item">
+            <span class="leave-badge leave-badge-${r.type}">${r.type}</span>
+            <span class="leave-detail" style="flex:1">${r.date}${timeInfo}${reasonInfo}</span>
+            ${status}
+          </div>
+        `;
+      }).join('');
+  }
+
+  // 管理者用
+  const adminSection = document.getElementById('leaveAdminSection');
+  if (adminSection && currentUser?.isAdmin) {
+    adminSection.style.display = '';
+    renderLeaveAdmin();
+  }
+}
+
+function setLeaveGroup(mode) {
+  leaveGroupMode = mode;
+  document.getElementById('leaveGroupDate').classList.toggle('active', mode === 'date');
+  document.getElementById('leaveGroupPerson').classList.toggle('active', mode === 'person');
+  renderLeaveAdmin();
+}
+
+function setLeaveView(mode) {
+  leaveViewMode = mode;
+  document.getElementById('leaveViewList').classList.toggle('active', mode === 'list');
+  document.getElementById('leaveViewCal').classList.toggle('active', mode === 'calendar');
+  renderLeaveAdmin();
+}
+
+function renderLeaveAdmin() {
+  const container = document.getElementById('leaveAdminContent');
+  if (!container) return;
+  const requests = getAllLeaveRequests();
+
+  if (leaveViewMode === 'calendar') {
+    renderLeaveAdminCalendar(container, requests);
+  } else {
+    renderLeaveAdminList(container, requests);
+  }
+}
+
+function renderLeaveAdminList(container, requests) {
+  if (requests.length === 0) {
+    container.innerHTML = '<p style="font-size:12px; color:var(--sub);">休み連絡はまだありません</p>';
     return;
   }
 
-  container.innerHTML = '<p style="font-size:12px; color:var(--sub); margin-bottom:6px;">最近の連絡</p>' +
-    mine.map(r => {
-      const timeInfo = r.time ? `（${r.time}）` : '';
-      const reasonInfo = r.reason ? ` — ${escapeHtml(r.reason)}` : '';
-      return `
-        <div class="leave-history-item">
-          <span class="leave-badge leave-badge-${r.type}">${r.type}</span>
-          <span class="leave-detail">${r.date}${timeInfo}${reasonInfo}</span>
-        </div>
-      `;
-    }).join('');
+  let html = '';
+  if (leaveGroupMode === 'date') {
+    // 日付別にグループ化
+    const byDate = {};
+    requests.forEach(r => {
+      if (!byDate[r.date]) byDate[r.date] = [];
+      byDate[r.date].push(r);
+    });
+    const sortedDates = Object.keys(byDate).sort().reverse();
+    sortedDates.forEach(date => {
+      html += `<div style="margin-top:10px"><p style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:4px;">${date}</p>`;
+      byDate[date].forEach((r, i) => {
+        html += renderLeaveAdminItem(r, i, date);
+      });
+      html += '</div>';
+    });
+  } else {
+    // 個人別にグループ化
+    const byPerson = {};
+    requests.forEach(r => {
+      if (!byPerson[r.staffName]) byPerson[r.staffName] = [];
+      byPerson[r.staffName].push(r);
+    });
+    Object.keys(byPerson).sort().forEach(name => {
+      html += `<div style="margin-top:10px"><p style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:4px;">👤 ${escapeHtml(name)}</p>`;
+      byPerson[name].forEach((r, i) => {
+        html += renderLeaveAdminItem(r, i, name);
+      });
+      html += '</div>';
+    });
+  }
+  container.innerHTML = html;
+}
+
+function renderLeaveAdminItem(r, idx, groupKey) {
+  const timeInfo = r.time ? `（${r.time}）` : '';
+  const reasonInfo = r.reason ? ` ${escapeHtml(r.reason)}` : '';
+  const nameInfo = leaveGroupMode === 'date' ? `${escapeHtml(r.staffName)} ` : '';
+  const dateInfo = leaveGroupMode === 'person' ? `${r.date} ` : '';
+  const status = r.approved
+    ? '<span class="leave-status leave-status-approved">承諾済</span>'
+    : `<button class="leave-approve-btn" onclick="approveLeave('${r.staffName}','${r.date}')">承諾</button>`;
+  return `
+    <div class="leave-my-item">
+      <span class="leave-badge leave-badge-${r.type}">${r.type}</span>
+      <span class="leave-detail" style="flex:1">${nameInfo}${dateInfo}${timeInfo}${reasonInfo}</span>
+      ${status}
+    </div>
+  `;
+}
+
+function renderLeaveAdminCalendar(container, requests) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDow = firstDay.getDay();
+
+  // 日付ごとのリクエストマップ
+  const byDate = {};
+  requests.forEach(r => {
+    if (!byDate[r.date]) byDate[r.date] = [];
+    byDate[r.date].push(r);
+  });
+
+  const dows = ['日','月','火','水','木','金','土'];
+  let html = `<p style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:6px;">${year}年${month+1}月</p>`;
+  html += '<div class="leave-admin-cal">';
+  html += dows.map(d => `<div class="leave-cal-dow">${d}</div>`).join('');
+
+  for (let i = 0; i < startDow; i++) {
+    html += '<div class="leave-admin-cal-day" style="background:transparent"></div>';
+  }
+
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayRequests = byDate[dateStr] || [];
+    const dots = dayRequests.map(r =>
+      `<span class="leave-admin-cal-dot dot-${r.type}" title="${escapeHtml(r.staffName)} ${r.type}"></span>`
+    ).join('');
+    const names = dayRequests.map(r => escapeHtml(r.staffName.slice(0,1))).join('');
+    html += `<div class="leave-admin-cal-day"><span class="day-num">${d}</span><br>${dots}<div style="font-size:9px;color:var(--sub)">${names}</div></div>`;
+  }
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function approveLeave(staffName, date) {
+  const requests = getAllLeaveRequests();
+  const target = requests.find(r => r.staffName === staffName && r.date === date && !r.approved);
+  if (target) {
+    target.approved = true;
+    target.approvedBy = currentUser.name;
+    target.approvedAt = new Date().toISOString();
+    localStorage.setItem('f8_leave_requests', JSON.stringify(requests));
+    showToast(`${staffName}さんの${date}を承諾しました`);
+    renderLeaveAdmin();
+  }
 }
 
 // ====== 権限設定画面（管理者用） ======

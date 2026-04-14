@@ -929,44 +929,62 @@
 
       <!-- 休み希望・連絡 -->
       <div class="section">
-        <h3 class="section-title">📋 休み・遅刻・早退の連絡</h3>
-        <div id="leaveRequestForm">
-          <div class="form-group">
-            <label>種別</label>
-            <div class="leave-type-btns">
-              <button class="leave-type-btn" onclick="selectLeaveType('欠勤', this)">欠勤</button>
-              <button class="leave-type-btn" onclick="selectLeaveType('遅刻', this)">遅刻</button>
-              <button class="leave-type-btn" onclick="selectLeaveType('早退', this)">早退</button>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>日付（複数選択OK）</label>
-            <div class="leave-cal-header">
-              <button class="leave-cal-nav" onclick="changeLeaveMonth(-1)">‹</button>
-              <span id="leaveCalMonth" class="leave-cal-title"></span>
-              <button class="leave-cal-nav" onclick="changeLeaveMonth(1)">›</button>
-            </div>
-            <div class="leave-cal-grid" id="leaveCalGrid"></div>
-            <div class="leave-selected-dates" id="leaveSelectedInfo"></div>
-          </div>
-          <div id="leaveTimeSection" style="display:none">
+        <h3 class="section-title collapsible" onclick="toggleSection('leaveFormSection')">📋 休み・遅刻・早退の連絡 <span id="leaveFormArrow" class="collapse-arrow">▼</span></h3>
+        <div id="leaveFormSection" class="collapsible-body" style="display:none">
+          <div id="leaveRequestForm">
             <div class="form-group">
-              <label id="leaveTimeLabel">出勤予定時刻</label>
-              <div class="time-input" id="leaveTimeDisplay" onclick="openClockPicker('leaveTime')">10:00</div>
-              <input type="hidden" id="leaveTime" value="10:00">
+              <label>種別</label>
+              <div class="leave-type-btns">
+                <button class="leave-type-btn" onclick="selectLeaveType('欠勤', this)">欠勤</button>
+                <button class="leave-type-btn" onclick="selectLeaveType('遅刻', this)">遅刻</button>
+                <button class="leave-type-btn" onclick="selectLeaveType('早退', this)">早退</button>
+              </div>
             </div>
-          </div>
-          <div class="form-group">
-            <label>理由（任意）</label>
-            <div class="leave-reason-chips">
-              <button class="suggestion-chip" onclick="setLeaveReason(this)">予定休暇</button>
-              <button class="suggestion-chip" onclick="setLeaveReason(this)">体調不良</button>
+            <div class="form-group">
+              <label>日付（複数選択OK）</label>
+              <div class="leave-cal-header">
+                <button class="leave-cal-nav" onclick="changeLeaveMonth(-1)">‹</button>
+                <span id="leaveCalMonth" class="leave-cal-title"></span>
+                <button class="leave-cal-nav" onclick="changeLeaveMonth(1)">›</button>
+              </div>
+              <div class="leave-cal-grid" id="leaveCalGrid"></div>
+              <div class="leave-selected-dates" id="leaveSelectedInfo"></div>
             </div>
-            <input type="text" id="leaveReason" class="search-input" placeholder="その他の理由を入力" style="width:100%">
+            <div id="leaveTimeSection" style="display:none">
+              <div class="form-group">
+                <label id="leaveTimeLabel">出勤予定時刻</label>
+                <div class="time-input" id="leaveTimeDisplay" onclick="openClockPicker('leaveTime')">10:00</div>
+                <input type="hidden" id="leaveTime" value="10:00">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>理由（任意）</label>
+              <input type="text" id="leaveReason" class="search-input" placeholder="例：予定休暇、体調不良" style="width:100%">
+            </div>
+            <button class="btn btn-primary" onclick="submitLeaveRequest()" style="width:100%">📋 連絡する</button>
           </div>
-          <button class="btn btn-primary" onclick="submitLeaveRequest()" style="width:100%">📋 連絡する</button>
         </div>
-        <div id="leaveHistory" style="margin-top:12px"></div>
+
+        <!-- 自分の申告リスト -->
+        <div id="leaveMyList" style="margin-top:12px"></div>
+
+        <!-- 管理者用：全員の休み管理 -->
+        <div id="leaveAdminSection" style="display:none; margin-top:16px;">
+          <div class="leave-admin-header">
+            <h4 style="font-size:14px; color:var(--text); font-weight:700;">👥 全員の休み管理</h4>
+            <div class="leave-admin-controls">
+              <div class="leave-view-toggle">
+                <button class="leave-toggle-btn active" id="leaveGroupDate" onclick="setLeaveGroup('date')">日付別</button>
+                <button class="leave-toggle-btn" id="leaveGroupPerson" onclick="setLeaveGroup('person')">個人別</button>
+              </div>
+              <div class="leave-view-toggle">
+                <button class="leave-toggle-btn active" id="leaveViewList" onclick="setLeaveView('list')">リスト</button>
+                <button class="leave-toggle-btn" id="leaveViewCal" onclick="setLeaveView('calendar')">カレンダー</button>
+              </div>
+            </div>
+          </div>
+          <div id="leaveAdminContent"></div>
+        </div>
       </div>
 
       <!-- 今月の実績 -->

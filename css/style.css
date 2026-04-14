@@ -993,6 +993,57 @@ body[data-theme="female"] {
 
 .leave-reason-chips { display: flex; gap: 6px; margin-bottom: 6px; }
 
+/* 管理者：休み管理 */
+.leave-admin-header { margin-bottom: 10px; }
+.leave-admin-controls { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.leave-view-toggle {
+  display: flex; border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.leave-toggle-btn {
+  padding: 6px 14px; font-size: 12px; font-weight: 600;
+  background: var(--card); color: var(--sub); border: none;
+  cursor: pointer; font-family: inherit;
+}
+.leave-toggle-btn.active {
+  background: var(--gold); color: #0B1426;
+}
+/* 申告リスト */
+.leave-my-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; background: var(--card); border-radius: 10px;
+  margin-bottom: 6px; box-shadow: 0 1px 3px var(--shadow);
+}
+.leave-status {
+  padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;
+}
+.leave-status-pending { background: #FF9500; color: #fff; }
+.leave-status-approved { background: #34C759; color: #fff; }
+/* 管理者カレンダー */
+.leave-admin-cal {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+}
+.leave-admin-cal-day {
+  min-height: 48px; padding: 4px; background: var(--card);
+  border-radius: 6px; font-size: 11px; position: relative;
+}
+.leave-admin-cal-day .day-num {
+  font-weight: 700; color: var(--text); font-size: 12px;
+}
+.leave-admin-cal-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  margin: 1px;
+}
+.leave-admin-cal-dot.dot-欠勤 { background: #FF3B30; }
+.leave-admin-cal-dot.dot-遅刻 { background: #FF9500; }
+.leave-admin-cal-dot.dot-早退 { background: #007AFF; }
+/* 管理者承認ボタン */
+.leave-approve-btn {
+  padding: 4px 10px; border-radius: 6px; border: none;
+  background: #34C759; color: #fff; font-size: 11px;
+  font-weight: 600; cursor: pointer; font-family: inherit;
+}
+
 .leave-history-item {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; background: var(--card); border-radius: 10px;
