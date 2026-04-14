@@ -55,6 +55,19 @@ const CONFIG = {
     return String(now.getFullYear()).slice(2) + String(now.getMonth() + 1).padStart(2, '0');
   },
 
+  // 現在の在庫ステータス（Monday.comから取得 2026-04-15）
+  // importMondayData実行後はスプレッドシートから自動取得に切替
+  CURRENT_INVENTORY: {
+    '撮影待ち': 48,
+    '出品待ち': 169,
+    '出品中': 159,
+    '梱包待ち': 7,
+    '確認相談': 4,
+    '完了': 14,
+    '合計': 401,
+    '更新日': '2026-04-15',
+  },
+
   // チームKPI目標（1日あたり、実稼働率70%）
   DAILY_KPI: {
     bunka: 58,    // 分荷撮影

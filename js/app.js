@@ -523,14 +523,19 @@ function updateHomeStats() {
 
 // ====== ボトルネック ======
 function updateBottleneck(items) {
-  // 撮影待ち: 登録済みだが写真がない
-  const satsueiWait = items.filter(i => !i.photo1 && !i.shipped).length;
-  // 出品待ち: 撮影済みだが出品情報がない（通販チャンネルのみ）
-  const shuppinWait = items.filter(i => i.photo1 && !i.listingTitle && !i.shipped && isTsuhanChannel(i.channelNumber)).length;
-  // 梱包待ち: 出品済みだが未出荷（status=出品中 or listingTitle有り）
-  const konpoWait = items.filter(i => (i.status === '出品中' || i.listingTitle) && !i.shipped).length;
+  // リアルデータ（Monday.com/スプレッドシートから取得した在庫ステータス）
+  const inv = CONFIG.CURRENT_INVENTORY || {};
+  const satsueiWait = inv['撮影待ち'] || 0;
+  const shuppinWait = inv['出品待ち'] || 0;
+  const konpoWait = inv['梱包待ち'] || 0;
 
-  const maxItems = 50; // バー100%の基準値
+  // ローカルの今日の登録分を加算
+  const todayLocal = items.filter(i => {
+    const today = new Date().toISOString().slice(0, 10);
+    return i.createdAt && i.createdAt.startsWith(today);
+  }).length;
+
+  const maxItems = 200; // バー100%の基準値
 
   const setBar = (id, count) => {
     const el = document.getElementById(id);
