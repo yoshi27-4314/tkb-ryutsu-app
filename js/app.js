@@ -6,8 +6,10 @@
 // ====== 状態管理 ======
 let currentUser = null;
 let currentTab = 'home';
-let cameraStep = 1;
+let cameraStep = 0;
 let currentItem = {};
+let currentCategory = null; // 'jisha', 'bigsports', 'watanabe', 'shimachiyo'
+let currentBundle = 'single'; // 'single' or 'set'
 let photosTaken = 0;
 let todayStats = { bunka: 0, satsuei: 0, shuppin: 0, konpo: 0 };
 
@@ -73,6 +75,7 @@ function showMainScreen() {
     document.getElementById('notifBadge').style.display = 'flex';
   }
   updateDate();
+  // loadTestData(); // テストデータ無効化（実運用モード）
   updateHomeStats();
   renderStockList();
   checkTodayAttendance();
@@ -107,7 +110,7 @@ function switchTab(tab) {
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.tab === tab);
   });
-  if (tab === 'camera' && cameraStep === 1) {
+  if (tab === 'camera' && cameraStep <= 1) {
     resetCameraFlow();
   }
   if (tab === 'stock') {
@@ -133,9 +136,40 @@ function getGreeting() {
 // ====== ホーム画面更新 ======
 function updateHomeStats() {
   const today = new Date().toISOString().slice(0, 10);
-  const items = getItems().filter(i => i.createdAt && i.createdAt.startsWith(today));
-  todayStats.bunka = items.length;
+  const items = getItems();
+  const todayItems = items.filter(i => i.createdAt && i.createdAt.startsWith(today));
+
+  // 今日の実績
+  todayStats.bunka = todayItems.length;
+  todayStats.satsuei = todayItems.filter(i => i.photo1).length;
+  todayStats.shuppin = todayItems.filter(i => i.listingTitle).length;
+  todayStats.konpo = todayItems.filter(i => i.shipped).length;
+
   document.getElementById('statBunka').textContent = todayStats.bunka;
+  document.getElementById('statSatsuei').textContent = todayStats.satsuei;
+  document.getElementById('statShuppin').textContent = todayStats.shuppin;
+  document.getElementById('statKonpo').textContent = todayStats.konpo;
+
+  // 実績を日別にローカル保存（目標設定用データ蓄積）
+  const statsKey = 'f8_daily_stats_' + today;
+  localStorage.setItem(statsKey, JSON.stringify({
+    date: today,
+    staff: currentUser.name,
+    bunka: todayStats.bunka,
+    satsuei: todayStats.satsuei,
+    shuppin: todayStats.shuppin,
+    konpo: todayStats.konpo,
+    updatedAt: new Date().toISOString(),
+  }));
+
+  // ボトルネック計算
+  updateBottleneck(items);
+
+  // 出勤メンバー表示
+  renderMemberTimeline();
+
+  // お知らせ更新
+  updateNoticeList(items);
 
   // 挨拶の更新
   const greetEl = document.querySelector('.greeting h2');
@@ -143,6 +177,204 @@ function updateHomeStats() {
     const firstName = currentUser.name.split(/[　 ]/)[0];
     greetEl.innerHTML = `${getGreeting()}、<span id="staffName">${firstName}</span>さん`;
   }
+}
+
+// ====== ボトルネック ======
+function updateBottleneck(items) {
+  // 撮影待ち: 登録済みだが写真がない
+  const satsueiWait = items.filter(i => !i.photo1 && !i.shipped).length;
+  // 出品待ち: 撮影済みだが出品情報がない（通販チャンネルのみ）
+  const shuppinWait = items.filter(i => i.photo1 && !i.listingTitle && !i.shipped && isTsuhanChannel(i.channelNumber)).length;
+  // 梱包待ち: 出品済みだが未出荷（status=出品中 or listingTitle有り）
+  const konpoWait = items.filter(i => (i.status === '出品中' || i.listingTitle) && !i.shipped).length;
+
+  const maxItems = 50; // バー100%の基準値
+
+  const setBar = (id, count) => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = Math.min(count / maxItems * 100, 100) + '%';
+  };
+
+  document.getElementById('bnCountSatsuei').textContent = satsueiWait + '件';
+  document.getElementById('bnCountShuppin').textContent = shuppinWait + '件';
+  document.getElementById('bnCountKonpo').textContent = konpoWait + '件';
+
+  setBar('bnBarSatsuei', satsueiWait);
+  setBar('bnBarShuppin', shuppinWait);
+  setBar('bnBarKonpo', konpoWait);
+
+  // 危険レベルでアラート表示
+  const threshold = 20;
+  document.getElementById('bnSatsuei').classList.toggle('alert', satsueiWait >= threshold);
+  document.getElementById('bnShuppin').classList.toggle('alert', shuppinWait >= threshold);
+  document.getElementById('bnKonpo').classList.toggle('alert', konpoWait >= threshold);
+}
+
+function isTsuhanChannel(channelNum) {
+  if (!channelNum) return false;
+  const ch = CONFIG.CHANNELS.find(c => c.id === channelNum);
+  return ch && ch.type === 'tsuhan';
+}
+
+// ====== お知らせ（実データ） ======
+function updateNoticeList(items) {
+  const list = document.getElementById('noticeList');
+  const emptyEl = document.getElementById('emptyNotice');
+  if (!list) return;
+
+  const notices = [];
+
+  // 承認待ち
+  items.filter(i => i.needsApproval && !i.approved && !i.rejected).forEach(i => {
+    notices.push({
+      badge: 'notice-danger', label: '承認待ち',
+      text: `${i.mgmtNum} ${i.productName || '商品'} ¥${i.estimatedPrice?.max?.toLocaleString() || '---'}`,
+    });
+  });
+
+  // 承認済み
+  items.filter(i => i.approved).slice(0, 3).forEach(i => {
+    notices.push({
+      badge: 'notice-approve', label: '承認済',
+      text: `${i.mgmtNum} ${i.channel || ''}で出品OK`,
+    });
+  });
+
+  // 出荷済み（今日）
+  const today = new Date().toISOString().slice(0, 10);
+  items.filter(i => i.shipped && i.shippedAt && i.shippedAt.startsWith(today)).forEach(i => {
+    notices.push({
+      badge: 'notice-gold', label: '出荷済',
+      text: `${i.mgmtNum} ${i.carrier || ''} で出荷完了`,
+    });
+  });
+
+  if (notices.length === 0) {
+    if (emptyEl) emptyEl.style.display = 'block';
+    list.innerHTML = '<p class="empty-notice">新しいお知らせはありません</p>';
+    return;
+  }
+
+  list.innerHTML = notices.map(n => `
+    <div class="notice-item">
+      <span class="notice-badge ${n.badge}">${n.label}</span>
+      <span>${escapeHtml(n.text)}</span>
+    </div>
+  `).join('');
+}
+
+// ====== 出勤メンバータイムライン ======
+function renderMemberTimeline() {
+  const container = document.getElementById('memberTimeline');
+  if (!container) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const timelineStart = 6; // 6時
+  const timelineEnd = 21;  // 21時
+  const totalHours = timelineEnd - timelineStart;
+
+  // 全スタッフの出勤情報を取得
+  const members = [];
+  CONFIG.STAFF.forEach(s => {
+    const saved = localStorage.getItem('f8_attendance_' + today + '_detail_' + s.name)
+      || localStorage.getItem('f8_attendance_' + today);
+
+    if (saved) {
+      try {
+        const a = JSON.parse(saved);
+        // 自分以外のデータもチェック（名前が一致するか）
+        if (a.staffName && a.staffName !== s.name) return;
+        members.push({
+          name: s.name,
+          start: a.start || '09:00',
+          end: a.end || '18:00',
+          breakStart: a.breakStart || null,
+          breakEnd: a.breakEnd || null,
+          noBreak: a.noBreak || false,
+        });
+      } catch {}
+    }
+  });
+
+  // 自分の出勤データを確実に含める
+  if (currentUser && !members.find(m => m.name === currentUser.name)) {
+    const mySaved = localStorage.getItem('f8_attendance_' + today);
+    if (mySaved) {
+      try {
+        const a = JSON.parse(mySaved);
+        members.push({
+          name: currentUser.name,
+          start: a.start || '09:00',
+          end: a.end || '18:00',
+          breakStart: a.breakStart || null,
+          breakEnd: a.breakEnd || null,
+          noBreak: a.noBreak || false,
+        });
+      } catch {}
+    }
+  }
+
+  // 人数表示
+  const countEl = document.getElementById('memberCount');
+  if (countEl) countEl.textContent = `(${members.length}名)`;
+
+  if (members.length === 0) {
+    container.innerHTML = '<p class="empty-notice">まだ出勤記録がありません</p>';
+    return;
+  }
+
+  const timeToPercent = (timeStr) => {
+    const [h, m] = timeStr.split(':').map(Number);
+    return ((h + m / 60) - timelineStart) / totalHours * 100;
+  };
+
+  let html = '';
+  members.forEach(m => {
+    const startPct = Math.max(0, timeToPercent(m.start));
+    const endPct = Math.min(100, timeToPercent(m.end));
+    const workWidth = endPct - startPct;
+
+    let breakHtml = '';
+    let breakMeta = '休憩なし';
+    if (m.breakStart && m.breakEnd && !m.noBreak) {
+      const bStartPct = Math.max(startPct, timeToPercent(m.breakStart));
+      const bEndPct = Math.min(endPct, timeToPercent(m.breakEnd));
+      breakHtml = `<div class="member-bar-break" style="left:${bStartPct}%;width:${bEndPct - bStartPct}%"></div>`;
+      breakMeta = `休憩 ${m.breakStart}-${m.breakEnd}`;
+    } else if (m.noBreak) {
+      breakMeta = '休憩なし';
+    } else {
+      // デフォルト休憩（12:00-13:00）
+      const bStartPct = Math.max(startPct, timeToPercent('12:00'));
+      const bEndPct = Math.min(endPct, timeToPercent('13:00'));
+      if (bStartPct < bEndPct) {
+        breakHtml = `<div class="member-bar-break" style="left:${bStartPct}%;width:${bEndPct - bStartPct}%"></div>`;
+      }
+      breakMeta = '休憩 12:00-13:00';
+    }
+
+    // 姓だけ表示
+    const lastName = m.name.split(/[　 ]/)[0];
+    html += `
+      <div class="member-row">
+        <div class="member-name">${escapeHtml(lastName)}</div>
+        <div class="member-bar-container">
+          <div class="member-bar-work" style="left:${startPct}%;width:${workWidth}%"></div>
+          ${breakHtml}
+        </div>
+        <div class="member-meta">${m.start}-${m.end}</div>
+      </div>
+    `;
+  });
+
+  // 時間軸
+  html += '<div class="member-time-axis">';
+  for (let h = timelineStart; h <= timelineEnd; h += 3) {
+    html += `<span class="member-time-tick">${h}:00</span>`;
+  }
+  html += '</div>';
+
+  container.innerHTML = html;
 }
 
 // ====== 在庫一覧 ======
@@ -350,12 +582,64 @@ async function analyzeBarcode() {
   }
 }
 
+// ====== 種別選択 ======
+function selectCategory(cat) {
+  currentCategory = cat;
+  currentItem = {};
+  currentBundle = 'single';
+
+  // 種別に応じた設定
+  const titles = {
+    jisha: { title: '自社商品を撮影', desc: 'AIが分荷判定します（アイロンポット or ブロカント）' },
+    bigsports: { title: 'ビッグスポーツの商品を撮影', desc: '価格を決定して出品します' },
+    watanabe: { title: '渡辺質店の商品を撮影', desc: '按分比率を確認して出品します' },
+    shimachiyo: { title: 'シマチヨの商品を撮影', desc: '浅野さん指定品を出品します' },
+  };
+
+  const t = titles[cat] || titles.jisha;
+  document.getElementById('step1Title').textContent = t.title;
+  document.getElementById('step1Desc').textContent = t.desc;
+
+  // 種別をcurrentItemに記録
+  currentItem.category_type = cat;
+  if (cat === 'bigsports') {
+    currentItem.channel = 'ビッグスポーツ';
+    currentItem.channelNumber = 11;
+    currentItem.itakuType = 'bigsports';
+  } else if (cat === 'watanabe') {
+    currentItem.channel = '渡辺質店';
+    currentItem.channelNumber = 10;
+    currentItem.itakuType = 'watanabe';
+  } else if (cat === 'shimachiyo') {
+    currentItem.channel = 'シマチヨ';
+    currentItem.channelNumber = 20;
+    currentItem.itakuType = 'shimachiyo';
+  }
+
+  showCameraStep(1);
+}
+
+function backToCategory() {
+  currentCategory = null;
+  currentItem = {};
+  showCameraStep(0);
+}
+
+function selectBundle(type) {
+  currentBundle = type;
+  document.getElementById('bundleSingle').classList.toggle('active', type === 'single');
+  document.getElementById('bundleSet').classList.toggle('active', type === 'set');
+  currentItem.bundleType = type;
+}
+
 // ====== 撮影フロー ======
 function resetCameraFlow() {
-  cameraStep = 1;
+  cameraStep = 0;
   currentItem = {};
+  currentCategory = null;
+  currentBundle = 'single';
   photosTaken = 0;
-  showCameraStep(1);
+  showCameraStep(0);
   // 入口選択に戻す
   const entrySelect = document.getElementById('entrySelect');
   if (entrySelect) entrySelect.style.display = 'block';
@@ -466,6 +750,25 @@ async function analyzePhoto() {
         ? `¥${j.estimatedPrice.min?.toLocaleString()}〜¥${j.estimatedPrice.max?.toLocaleString()}`
         : '—';
       document.getElementById('aiSize').textContent = j.estimatedSize || '—';
+      // 種別に応じてチャンネル表示を上書き
+      if (currentCategory === 'bigsports') {
+        document.getElementById('aiChannel').textContent = 'ビッグスポーツ';
+        currentItem.channel = 'ビッグスポーツ';
+        currentItem.channelNumber = 11;
+      } else if (currentCategory === 'watanabe') {
+        document.getElementById('aiChannel').textContent = '渡辺質店';
+        currentItem.channel = '渡辺質店';
+        currentItem.channelNumber = 10;
+      } else if (currentCategory === 'shimachiyo') {
+        document.getElementById('aiChannel').textContent = 'シマチヨ';
+        currentItem.channel = 'シマチヨ';
+        currentItem.channelNumber = 20;
+      }
+      // 按分比率欄の表示切替
+      const anbunEl = document.getElementById('anbunSection');
+      if (anbunEl) anbunEl.style.display = currentCategory === 'watanabe' ? 'block' : 'none';
+      // 単品/まとめのリセット
+      selectBundle('single');
       showCameraStep(2);
     } else if (result.error) {
       showToast('判定エラー: ' + result.error);
@@ -482,6 +785,24 @@ async function analyzePhoto() {
 }
 
 function acceptJudgment() {
+  // 渡辺質店の場合、按分比率を確認
+  if (currentCategory === 'watanabe') {
+    const rate = document.getElementById('anbunRate').value;
+    if (!rate) {
+      showToast('按分比率を入力してください');
+      return;
+    }
+    currentItem.anbunRate = Number(rate);
+  }
+  // ビッグスポーツは折半固定
+  if (currentCategory === 'bigsports') {
+    currentItem.anbunRate = 50;
+  }
+  // まとめ売り設定を記録
+  currentItem.bundleType = currentBundle;
+  if (currentBundle === 'set') {
+    currentItem.channel += '（まとめ）';
+  }
   buildPhotoGuide();
   showCameraStep(3);
 }
@@ -996,6 +1317,14 @@ function filterByStatus(status) {
 }
 
 // ====== 出退勤 ======
+function toggleNoBreak() {
+  const checked = document.getElementById('noBreakCheck').checked;
+  const bStartEl = document.getElementById('breakStartDisplay');
+  const bEndEl = document.getElementById('breakEndDisplay');
+  if (bStartEl) bStartEl.style.opacity = checked ? '0.3' : '1';
+  if (bEndEl) bEndEl.style.opacity = checked ? '0.3' : '1';
+}
+
 function submitAttendance() {
   // 1日1回チェック
   const today = new Date().toISOString().slice(0, 10);
@@ -1007,6 +1336,9 @@ function submitAttendance() {
 
   const start = document.getElementById('attendStart').value;
   const end = document.getElementById('attendEnd').value;
+  const noBreak = document.getElementById('noBreakCheck').checked;
+  const breakStart = noBreak ? null : document.getElementById('breakStart').value;
+  const breakEnd = noBreak ? null : document.getElementById('breakEnd').value;
 
   if (!start) { showToast('出勤時刻を入力してください'); return; }
   if (!end) { showToast('退勤時刻を入力してください'); return; }
@@ -1015,7 +1347,12 @@ function submitAttendance() {
   const [sh, sm] = start.split(':').map(Number);
   const [eh, em] = end.split(':').map(Number);
   const totalMin = (eh * 60 + em) - (sh * 60 + sm);
-  const breakMin = 60;
+  let breakMin = 0;
+  if (!noBreak && breakStart && breakEnd) {
+    const [bsh, bsm] = breakStart.split(':').map(Number);
+    const [beh, bem] = breakEnd.split(':').map(Number);
+    breakMin = (beh * 60 + bem) - (bsh * 60 + bsm);
+  }
   const netMin = totalMin - breakMin;
   const netHours = (netMin / 60).toFixed(1);
 
@@ -1026,25 +1363,32 @@ function submitAttendance() {
     type: '勤務申告',
     start_time: start,
     end_time: end,
+    break_start: breakStart || '',
+    break_end: breakEnd || '',
+    no_break: noBreak ? 'はい' : 'いいえ',
     break_minutes: breakMin,
     net_hours: netHours,
     timestamp: formatTimestamp(),
   });
 
-  // ローカルに記録（1日1回制限用）
+  // ローカルに記録
   localStorage.setItem('f8_attendance_' + today, JSON.stringify({
-    start, end, breakMin, netHours, staffName: currentUser.name,
+    start, end, breakStart, breakEnd, noBreak, breakMin, netHours, staffName: currentUser.name,
   }));
 
   // 表示更新
+  const breakText = noBreak ? '休憩なし' : `休憩${breakMin}分`;
   const msg = document.getElementById('attendanceMsg');
-  msg.textContent = `✅ ${start}〜${end}（実働${netHours}時間）記録済み`;
+  msg.textContent = `✅ ${start}〜${end}（${breakText}・実働${netHours}時間）記録済み`;
   msg.classList.add('recorded');
 
   // 入力欄を隠す
-  document.querySelector('.attendance-form .attendance-row').style.display = 'none';
+  document.querySelectorAll('.attendance-form .attendance-row').forEach(el => el.style.display = 'none');
 
   showToast('🕐 勤務記録を送信しました');
+
+  // ホーム画面の出勤メンバー更新
+  renderMemberTimeline();
 }
 
 function checkTodayAttendance() {
@@ -1121,12 +1465,14 @@ function drawMiniClock(canvasId, hour, min) {
 
 function openClockPicker(target) {
   clockTarget = target;
-  const current = document.getElementById(target === 'start' ? 'attendStart' : 'attendEnd').value || '09:00';
+  const inputMap = { start: 'attendStart', end: 'attendEnd', breakStart: 'breakStart', breakEnd: 'breakEnd' };
+  const titleMap = { start: '出勤時刻', end: '退勤時刻', breakStart: '休憩開始', breakEnd: '休憩終了' };
+  const current = document.getElementById(inputMap[target] || 'attendStart').value || '09:00';
   const [h, m] = current.split(':').map(Number);
   clockHour = h; clockMin = m;
   clockMode = 'hour';
 
-  document.getElementById('clockPickerTitle').textContent = target === 'start' ? '出勤時刻' : '退勤時刻';
+  document.getElementById('clockPickerTitle').textContent = titleMap[target] || '時刻を選択';
   updateClockPickerDisplay();
   drawClockPickerFace();
   document.getElementById('clockModeHour').classList.add('active');
@@ -1284,13 +1630,12 @@ function handleClockTapAt(x, y) {
 
 function applyClockPicker() {
   const str = String(clockHour).padStart(2, '0') + ':' + String(clockMin).padStart(2, '0');
-  if (clockTarget === 'start') {
-    document.getElementById('attendStart').value = str;
-    document.getElementById('attendStartDisplay').textContent = str;
-  } else {
-    document.getElementById('attendEnd').value = str;
-    document.getElementById('attendEndDisplay').textContent = str;
-  }
+  const inputMap = { start: 'attendStart', end: 'attendEnd', breakStart: 'breakStart', breakEnd: 'breakEnd' };
+  const displayMap = { start: 'attendStartDisplay', end: 'attendEndDisplay', breakStart: 'breakStartDisplay', breakEnd: 'breakEndDisplay' };
+  const inputEl = document.getElementById(inputMap[clockTarget]);
+  const displayEl = document.getElementById(displayMap[clockTarget]);
+  if (inputEl) inputEl.value = str;
+  if (displayEl) displayEl.textContent = str;
   closeClockPicker();
 }
 
@@ -2008,6 +2353,20 @@ function loadProfileImages() {
   }
 }
 
+// ====== 折りたたみ ======
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(id.replace('Section', 'Arrow'));
+  if (!el) return;
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    if (arrow) arrow.classList.add('open');
+  } else {
+    el.style.display = 'none';
+    if (arrow) arrow.classList.remove('open');
+  }
+}
+
 // ====== ユーティリティ ======
 function showToast(msg) {
   const existing = document.querySelector('.toast');
@@ -2033,6 +2392,48 @@ function formatTimestamp() {
     String(now.getDate()).padStart(2,'0') + ' ' +
     String(now.getHours()).padStart(2,'0') + ':' +
     String(now.getMinutes()).padStart(2,'0');
+}
+
+// ====== テストデータ投入 ======
+function loadTestData() {
+  const today = new Date().toISOString().slice(0, 10);
+
+  // 出勤テストデータ（他メンバー分）
+  const testAttendance = [
+    { staffName: '林和人', start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '13:00', noBreak: false, breakMin: 60, netHours: '8.0' },
+    { staffName: '横山優', start: '09:30', end: '18:30', breakStart: '12:30', breakEnd: '13:30', noBreak: false, breakMin: 60, netHours: '8.0' },
+    { staffName: '平野光雄', start: '08:00', end: '17:00', breakStart: '13:00', breakEnd: '14:00', noBreak: false, breakMin: 60, netHours: '8.0' },
+    { staffName: '三島圭織', start: '10:00', end: '17:00', breakStart: null, breakEnd: null, noBreak: true, breakMin: 0, netHours: '7.0' },
+    { staffName: '桃井侑菜', start: '09:00', end: '16:00', breakStart: '12:00', breakEnd: '12:30', noBreak: false, breakMin: 30, netHours: '6.5' },
+    { staffName: '伊藤佐和子', start: '13:00', end: '20:00', breakStart: '16:00', breakEnd: '16:30', noBreak: false, breakMin: 30, netHours: '6.5' },
+  ];
+
+  testAttendance.forEach(a => {
+    const key = 'f8_attendance_' + today;
+    // 自分のデータは上書きしない
+    if (currentUser && a.staffName === currentUser.name) return;
+    const detailKey = key + '_detail_' + a.staffName;
+    if (!localStorage.getItem(detailKey)) {
+      localStorage.setItem(detailKey, JSON.stringify(a));
+    }
+  });
+
+  // ボトルネック用テストデータ（商品）
+  const data = loadLocalData();
+  if (data.items.length === 0) {
+    const testItems = [
+      { mgmtNum: '2604-0001', productName: 'アンティーク真鍮ランプ', channel: 'アイロンポット', channelNumber: 1, photo1: 'test', listingTitle: 'ビンテージ真鍮ランプ', condition: 'B', estimatedPrice: { min: 8000, max: 18000 }, location: 'A-1', staffName: '林和人', createdAt: new Date().toISOString() },
+      { mgmtNum: '2604-0002', productName: 'SONY ラジオ ICF-506', channel: 'ブロカント', channelNumber: 2, photo1: 'test', condition: 'A', estimatedPrice: { min: 3000, max: 5000 }, location: 'B-1', staffName: '横山優', createdAt: new Date().toISOString() },
+      { mgmtNum: '2604-0003', productName: '九谷焼 花瓶', channel: 'アイロンポット', channelNumber: 1, photo1: 'test', listingTitle: '九谷焼 色絵花瓶', status: '出品中', condition: 'A', estimatedPrice: { min: 12000, max: 25000 }, location: 'A-2', staffName: '桃井侑菜', createdAt: new Date().toISOString() },
+      { mgmtNum: '2604-0004', productName: '昭和レトロ ガラス皿セット', channel: 'ブロカント', channelNumber: 2, condition: 'B', estimatedPrice: { min: 1500, max: 3000 }, location: 'C-1', staffName: '平野光雄', createdAt: new Date().toISOString() },
+      { mgmtNum: '2604-0005', productName: 'ヴィンテージ Zippo', channel: 'アイロンポット', channelNumber: 1, photo1: 'test', condition: 'A', estimatedPrice: { min: 5000, max: 12000 }, location: 'A-3', staffName: '三島圭織', createdAt: new Date().toISOString() },
+      { mgmtNum: '2604-0006', productName: '古伊万里 小皿5枚', channel: 'アイロンポット', channelNumber: 1, condition: 'B', estimatedPrice: { min: 8000, max: 15000 }, location: 'B-2', staffName: '桃井侑菜', createdAt: new Date().toISOString() },
+      { mgmtNum: '2604-0007', productName: 'CASIO 電卓', channel: 'ブロカント', channelNumber: 2, photo1: 'test', listingTitle: 'CASIO 関数電卓', status: '出品中', condition: 'A', estimatedPrice: { min: 2000, max: 4000 }, location: 'C-2', staffName: '横山優', createdAt: new Date().toISOString() },
+      { mgmtNum: '2604-0008', productName: '銅製 やかん', channel: 'アイロンポット', channelNumber: 1, photo1: 'test', listingTitle: '銅製やかん 昭和', status: '出品中', condition: 'B', estimatedPrice: { min: 3000, max: 6000 }, location: 'A-1', staffName: '林和人', needsApproval: true, approvalReason: '高額品', createdAt: new Date().toISOString() },
+    ];
+    testItems.forEach(item => data.items.push(item));
+    saveLocalData(data);
+  }
 }
 
 // ====== 初期化 ======

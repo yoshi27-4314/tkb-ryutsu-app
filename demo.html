@@ -373,6 +373,105 @@ body {
   font-size: 18px; margin-top: -12px; box-shadow: 0 2px 8px rgba(197,162,88,0.3);
 }
 
+/* ============ TAKEBACK SAISEI ============ */
+.tkbs { background: #F8F5EE; }
+.tkbs .hdr {
+  padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 2px solid #C5A258; background: #1C2541; position: sticky; top: 0; z-index: 10;
+}
+.tkbs .hdr-logo {
+  width: 32px; height: 32px; border-radius: 8px; background: #C5A258; color: #1C2541;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+}
+.tkbs .hdr-title { font-size: 14px; font-weight: 700; color: #C5A258; margin-left: 8px; }
+.tkbs .hdr-left { display: flex; align-items: center; }
+.tkbs .hdr-right { display: flex; gap: 8px; font-size: 18px; }
+.tkbs .notif-dot { position: relative; }
+.tkbs .notif-dot::after {
+  content: '1'; position: absolute; top: -6px; right: -8px;
+  background: #CE2029; color: #fff; font-size: 9px; font-weight: 700;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.tkbs .body { padding: 16px; }
+.tkbs .greeting { font-size: 18px; font-weight: 700; color: #1C2541; }
+.tkbs .date { font-size: 12px; color: #7a7a7a; margin-top: 2px; margin-bottom: 16px; }
+.tkbs .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.tkbs .stat {
+  background: #fff; border-radius: 12px; padding: 14px; text-align: center;
+  box-shadow: 0 2px 8px rgba(28,37,65,0.06);
+  border-left: 3px solid #006B3F;
+}
+.tkbs .stat-num { font-size: 26px; font-weight: 700; color: #006B3F; }
+.tkbs .stat-label { font-size: 12px; color: #5a6272; margin-top: 2px; }
+.tkbs .section-title { font-size: 14px; font-weight: 700; color: #1C2541; margin-bottom: 10px; }
+
+/* 現場カード */
+.tkbs .genba-card {
+  background: #fff; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(28,37,65,0.06); margin-bottom: 12px;
+}
+.tkbs .genba-img {
+  width: 100%; height: 80px;
+  background: linear-gradient(135deg, #1C2541 0%, #2a3a5c 100%);
+  display: flex; align-items: center; justify-content: center;
+  color: #C5A258; font-size: 32px; position: relative;
+}
+.tkbs .genba-tag {
+  position: absolute; top: 8px; left: 10px;
+  color: #fff; padding: 3px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 700;
+}
+.tkbs .tag-working { background: #006B3F; }
+.tkbs .tag-confirmed { background: #C5A258; }
+.tkbs .tag-completed { background: #5a6272; }
+.tkbs .genba-info { padding: 10px 14px; }
+.tkbs .genba-title { font-size: 14px; font-weight: 700; color: #1C2541; }
+.tkbs .genba-meta { font-size: 11px; color: #7a7a7a; margin-top: 2px; }
+.tkbs .genba-checklist { font-size: 11px; color: #006B3F; margin-top: 4px; font-weight: 500; }
+
+/* 動産引き継ぎ */
+.tkbs .handover-card {
+  background: #fff; border-radius: 10px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04); margin-bottom: 8px;
+}
+.tkbs .handover-icon { font-size: 24px; }
+.tkbs .handover-info { flex: 1; }
+.tkbs .handover-title { font-size: 13px; font-weight: 700; color: #1C2541; }
+.tkbs .handover-meta { font-size: 11px; color: #7a7a7a; margin-top: 2px; }
+.tkbs .handover-status {
+  font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 6px;
+  background: #faf3e0; color: #8a6d20;
+}
+
+/* 現場開始ボタン */
+.tkbs .genba-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 16px; border-radius: 14px; border: none;
+  background: #1C2541; color: #C5A258;
+  font-size: 16px; font-weight: 700; margin-top: 16px;
+  box-shadow: 0 4px 16px rgba(28,37,65,0.25);
+}
+
+/* ボトムナビ */
+.tkbs .bnav {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; background: #fff; border-top: 1px solid #dde0e6;
+  padding: 8px 0 16px;
+}
+.tkbs .bnav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  font-size: 10px; color: #7a7a7a; gap: 2px;
+}
+.tkbs .bnav-item.active { color: #006B3F; }
+.tkbs .bnav-icon { font-size: 20px; }
+.tkbs .bnav-cam-s {
+  background: #1C2541; color: #C5A258; width: 42px; height: 42px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; margin-top: -12px; box-shadow: 0 2px 8px rgba(28,37,65,0.3);
+}
+
 /* ============ CLEARMAINTE ============ */
 .cm { background: #F8F5EE; }
 .cm .hdr {
@@ -772,7 +871,80 @@ body {
   </div>
 </div>
 </div>
-<div class="phone-label">テイクバック</div>
+<div class="phone-label">テイクバック（流通）</div>
+</div>
+
+<!-- ========== テイクバック再生 ========== -->
+<div class="phone-wrap" onclick="openDetail(this, 'テイクバック（再生）')">
+<div class="phone">
+<div class="phone-inner tkbs">
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-logo">F8</div>
+      <span class="hdr-title">テイクバック 再生</span>
+    </div>
+    <div class="hdr-right">
+      <span class="notif-dot">🔔</span>
+      <span>⚙️</span>
+    </div>
+  </div>
+  <div class="body" style="padding-bottom:80px;">
+    <div class="greeting">おはようございます、スタッフAさん</div>
+    <div class="date">2026年4月12日（日）</div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num">2</div><div class="stat-label">今日の案件</div></div>
+      <div class="stat"><div class="stat-num">1</div><div class="stat-label">作業中</div></div>
+      <div class="stat"><div class="stat-num">3</div><div class="stat-label">見積もり待ち</div></div>
+      <div class="stat"><div class="stat-num">5</div><div class="stat-label">完了</div></div>
+    </div>
+
+    <div class="section-title">📅 今日の現場</div>
+    <div class="genba-card">
+      <div class="genba-img">
+        🏠
+        <span class="genba-tag tag-working">作業中</span>
+      </div>
+      <div class="genba-info">
+        <div class="genba-title">岐阜市蔵前 遺品整理</div>
+        <div class="genba-meta">09:00 - 15:00 ・ 3名配置</div>
+        <div class="genba-checklist">☑️ 6/12 チェック完了</div>
+      </div>
+    </div>
+    <div class="genba-card">
+      <div class="genba-img">
+        🏢
+        <span class="genba-tag tag-confirmed">確定</span>
+      </div>
+      <div class="genba-info">
+        <div class="genba-title">各務原市 残置物撤去</div>
+        <div class="genba-meta">14:00 - 17:00 ・ 2名配置</div>
+        <div class="genba-checklist">☑️ 0/8 未着手</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:16px">📦 動産引き継ぎ</div>
+    <div class="handover-card">
+      <span class="handover-icon">📦</span>
+      <div class="handover-info">
+        <div class="handover-title">蔵前案件 → 流通事業</div>
+        <div class="handover-meta">回収品 12点 ・ 4/13 搬入予定</div>
+      </div>
+      <span class="handover-status">待ち</span>
+    </div>
+
+    <button class="genba-btn">🔨 現場作業を開始する</button>
+  </div>
+  <div class="bnav">
+    <div class="bnav-item active"><span class="bnav-icon">🏠</span>ホーム</div>
+    <div class="bnav-item"><span class="bnav-icon">📋</span>案件</div>
+    <div class="bnav-item"><span class="bnav-cam-s">🔨</span>現場</div>
+    <div class="bnav-item"><span class="bnav-icon">💬</span>チャット</div>
+    <div class="bnav-item"><span class="bnav-icon">👤</span>マイページ</div>
+  </div>
+</div>
+</div>
+<div class="phone-label">テイクバック（再生）</div>
 </div>
 
 <!-- ========== クリアメンテ ========== -->

@@ -71,47 +71,66 @@
         <p class="greeting-date" id="todayDate"></p>
       </div>
 
+      <!-- ボトルネック -->
       <div class="section">
-        <h3 class="section-title">📊 今日の作業</h3>
-        <div class="stat-grid">
-          <div class="stat-card">
-            <div class="stat-number" id="statBunka">12</div>
-            <div class="stat-label">分荷判定</div>
+        <h3 class="section-title">⚠️ ボトルネック</h3>
+        <div class="bottleneck-list" id="bottleneckList">
+          <div class="bottleneck-item" id="bnSatsuei">
+            <div class="bn-icon">📸</div>
+            <div class="bn-info">
+              <div class="bn-label">撮影待ち</div>
+              <div class="bn-bar-wrap"><div class="bn-bar bn-bar-warn" id="bnBarSatsuei" style="width:0%"></div></div>
+            </div>
+            <div class="bn-count" id="bnCountSatsuei">0件</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-number" id="statSatsuei">28</div>
-            <div class="stat-label">撮影</div>
+          <div class="bottleneck-item" id="bnShuppin">
+            <div class="bn-icon">📝</div>
+            <div class="bn-info">
+              <div class="bn-label">出品待ち</div>
+              <div class="bn-bar-wrap"><div class="bn-bar bn-bar-danger" id="bnBarShuppin" style="width:0%"></div></div>
+            </div>
+            <div class="bn-count" id="bnCountShuppin">0件</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-number" id="statShuppin">5</div>
-            <div class="stat-label">出品</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="statKonpo">3</div>
-            <div class="stat-label">梱包</div>
+          <div class="bottleneck-item" id="bnKonpo">
+            <div class="bn-icon">📦</div>
+            <div class="bn-info">
+              <div class="bn-label">梱包待ち</div>
+              <div class="bn-bar-wrap"><div class="bn-bar bn-bar-gold" id="bnBarKonpo" style="width:0%"></div></div>
+            </div>
+            <div class="bn-count" id="bnCountKonpo">0件</div>
           </div>
         </div>
       </div>
 
+      <!-- 今日の実績 -->
+      <div class="section">
+        <h3 class="section-title">📊 今日の実績</h3>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="statBunka">0</div>
+            <div class="stat-label">分荷判定</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="statSatsuei">0</div>
+            <div class="stat-label">撮影</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="statShuppin">0</div>
+            <div class="stat-label">出品</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="statKonpo">0</div>
+            <div class="stat-label">梱包</div>
+          </div>
+        </div>
+        <p class="stat-note" id="statNote">※ 1ヶ月間の実績データを蓄積中。目標設定は来月から自動で有効になります。</p>
+      </div>
+
+      <!-- お知らせ -->
       <div class="section">
         <h3 class="section-title">📋 お知らせ</h3>
         <div class="notice-list" id="noticeList">
-          <div class="notice-item">
-            <span class="notice-badge notice-danger">承認待ち</span>
-            <span>高額品 2604-0031 ¥45,000 浅野さん確認中</span>
-          </div>
-          <div class="notice-item">
-            <span class="notice-badge notice-approve">承認済</span>
-            <span>2604-0029 ヤフオクビンテージで出品OK</span>
-          </div>
-          <div class="notice-item">
-            <span class="notice-badge notice-gold">落札</span>
-            <span>2604-0022 ¥18,500で落札されました 🎉</span>
-          </div>
-          <div class="notice-item">
-            <span class="notice-badge notice-info">連絡</span>
-            <span>本日の配置：分荷→撮影の順で作業</span>
-          </div>
+          <p class="empty-notice" id="emptyNotice">新しいお知らせはありません</p>
         </div>
       </div>
 
@@ -132,51 +151,12 @@
         </button>
       </div>
 
+      <!-- 今日の出勤メンバー -->
       <div class="section" style="margin-top:24px">
-        <h3 class="section-title">📦 最近の商品</h3>
-        <div class="product-card">
-          <div class="product-img-area">
-            <span class="product-emoji">🏺</span>
-            <span class="product-channel-tag">ヤフオクビンテージ</span>
-            <span class="product-price-tag">¥18,000</span>
-          </div>
-          <div class="product-info">
-            <div class="product-number-row">
-              <span class="product-number">2604-0031</span>
-              <span class="product-status product-status-red">承認待ち</span>
-            </div>
-            <div class="product-name">アンティーク 真鍮テーブルランプ</div>
-            <div class="product-meta">分荷: 桃井侑菜 ・ 保管: A-2</div>
-          </div>
-        </div>
-        <div class="product-card">
-          <div class="product-img-area">
-            <span class="product-emoji">📻</span>
-            <span class="product-channel-tag tag-green">ヤフオク現行</span>
-            <span class="product-price-tag">¥4,500</span>
-          </div>
-          <div class="product-info">
-            <div class="product-number-row">
-              <span class="product-number">2604-0030</span>
-              <span class="product-status product-status-green">出品中</span>
-            </div>
-            <div class="product-name">SONY トランジスタラジオ ICF-506</div>
-            <div class="product-meta">分荷: 横山優 ・ 保管: B-1</div>
-          </div>
-        </div>
-        <div class="product-card">
-          <div class="product-img-area">
-            <span class="product-emoji">🏠</span>
-            <span class="product-channel-tag tag-gold">ヤフオクまとめ</span>
-            <span class="product-price-tag">¥3,200</span>
-          </div>
-          <div class="product-info">
-            <div class="product-number-row">
-              <span class="product-number">2604-0029</span>
-              <span class="product-status product-status-gold">撮影待ち</span>
-            </div>
-            <div class="product-name">昭和レトロ ガラス花瓶 3点セット</div>
-            <div class="product-meta">分荷: 平野光雄 ・ 保管: C-1</div>
+        <h3 class="section-title collapsible" onclick="toggleSection('memberSection')">👥 今日の出勤 <span id="memberCount" class="collapse-count"></span><span id="memberArrow" class="collapse-arrow">▼</span></h3>
+        <div id="memberSection" class="collapsible-body" style="display:none">
+          <div id="memberTimeline" class="member-timeline">
+            <!-- JSで動的に生成 -->
           </div>
         </div>
       </div>
@@ -450,14 +430,45 @@
 
     <!-- 撮影タブ -->
     <div id="tab-camera" class="tab-content">
+      <!-- ステップ0: 種別選択 -->
+      <div id="cameraStep0" class="camera-step active">
+        <div class="camera-guide">
+          <h3>商品を登録</h3>
+          <p>どの種別の商品ですか？</p>
+        </div>
+        <div class="category-select">
+          <button class="category-btn" onclick="selectCategory('jisha')">
+            <span class="category-icon">🏷️</span>
+            <span class="category-name">自社</span>
+            <span class="category-desc">アイロンポット・ブロカント</span>
+          </button>
+          <button class="category-btn" onclick="selectCategory('bigsports')">
+            <span class="category-icon">⚾</span>
+            <span class="category-name">ビッグスポーツ</span>
+            <span class="category-desc">委託販売</span>
+          </button>
+          <button class="category-btn" onclick="selectCategory('watanabe')">
+            <span class="category-icon">💎</span>
+            <span class="category-name">渡辺質店</span>
+            <span class="category-desc">委託販売</span>
+          </button>
+          <button class="category-btn" onclick="selectCategory('shimachiyo')">
+            <span class="category-icon">👤</span>
+            <span class="category-name">シマチヨ</span>
+            <span class="category-desc">浅野さん指定品</span>
+          </button>
+        </div>
+      </div>
+
       <!-- ステップ1: 写真撮影 or バーコード -->
-      <div id="cameraStep1" class="camera-step active">
+      <div id="cameraStep1" class="camera-step">
         <!-- 入口選択 -->
         <div class="entry-select" id="entrySelect">
           <div class="camera-guide">
-            <h3>商品を登録</h3>
-            <p>撮影またはバーコードスキャンで開始します</p>
+            <h3 id="step1Title">商品を撮影</h3>
+            <p id="step1Desc">撮影またはバーコードスキャンで開始します</p>
           </div>
+          <button class="btn btn-outline" onclick="backToCategory()" style="margin-bottom:12px; font-size:13px">← 種別選択に戻る</button>
           <button class="camera-start-btn" onclick="startPhotoEntry()" style="margin-bottom:12px">
             <span class="camera-start-icon">📷</span>
             <span>写真で登録</span>
@@ -555,6 +566,24 @@
               <span class="ai-label">推定サイズ</span>
               <span class="ai-value" id="aiSize">—</span>
             </div>
+          </div>
+          <!-- 単品/まとめ選択 -->
+          <div id="bundleSelect" style="margin-top:12px">
+            <div class="ai-row">
+              <span class="ai-label">出品形態</span>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-outline bundle-btn active" id="bundleSingle" onclick="selectBundle('single')">単品</button>
+                <button class="btn btn-outline bundle-btn" id="bundleSet" onclick="selectBundle('set')">まとめ売り</button>
+              </div>
+            </div>
+          </div>
+          <!-- 委託: 按分比率（渡辺質店のみ表示） -->
+          <div id="anbunSection" style="display:none; margin-top:12px;">
+            <div class="ai-row">
+              <span class="ai-label">按分比率（テイクバック %）</span>
+              <input type="number" id="anbunRate" class="search-input" placeholder="例: 50" min="0" max="100" style="width:100px">
+            </div>
+            <p style="font-size:12px; color:var(--danger); margin-top:4px;">※ 出品前に確定してください</p>
           </div>
           <div class="ai-actions">
             <button class="btn btn-primary" onclick="acceptJudgment()">✅ OK</button>
@@ -756,6 +785,24 @@
               <label>退勤</label>
               <div class="time-input" id="attendEndDisplay" onclick="openClockPicker('end')">18:00</div>
               <input type="hidden" id="attendEnd" value="18:00">
+            </div>
+          </div>
+          <div class="attendance-row" style="margin-top:8px">
+            <div class="form-group" style="flex:1">
+              <label>休憩開始</label>
+              <div class="time-input" id="breakStartDisplay" onclick="openClockPicker('breakStart')">12:00</div>
+              <input type="hidden" id="breakStart" value="12:00">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label>休憩終了</label>
+              <div class="time-input" id="breakEndDisplay" onclick="openClockPicker('breakEnd')">13:00</div>
+              <input type="hidden" id="breakEnd" value="13:00">
+            </div>
+            <div class="form-group" style="flex:0 0 auto; align-self:flex-end;">
+              <label class="no-break-label">
+                <input type="checkbox" id="noBreakCheck" onchange="toggleNoBreak()">
+                <span style="font-size:12px">休憩なし</span>
+              </label>
             </div>
           </div>
           <button class="btn btn-primary" onclick="submitAttendance()">📝 勤務記録を送信</button>
