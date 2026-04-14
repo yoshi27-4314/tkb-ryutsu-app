@@ -6,7 +6,7 @@
 <title>テイクバック 流通事業部</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1C2541">
-<link rel="stylesheet" href="css/style.css?v=20260414c">
+<link rel="stylesheet" href="css/style.css?v=20260414d">
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -704,6 +704,7 @@
           <h3>📸 追加写真を撮ってください</h3>
           <p id="guideText">この商品に合った撮り方をガイドします</p>
         </div>
+        <input type="file" id="guidePhotoInput2" accept="image/*" capture="environment" style="display:none" onchange="handleGuidePhoto(event)">
         <div class="photo-guide-list" id="photoGuideList">
           <!-- JSで動的に生成 -->
         </div>
@@ -1122,7 +1123,7 @@
 
 </div>
 
-<script src="js/config.js?v=20260414c"></script>
-<script src="js/app.js?v=20260414c"></script>
+<script src="js/config.js?v=20260414d"></script>
+<script src="js/app.js?v=20260414d"></script>
 </body>
 </html>

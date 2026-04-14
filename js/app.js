@@ -1055,36 +1055,32 @@ function buildPhotoGuide() {
   document.getElementById('afterAllPhotos').style.display = 'block';
 }
 
-function takeGuidePhoto(num) {
-  // ガイド写真の撮影（DOMに追加してからclickでモバイル対応）
-  const input = document.getElementById('guidePhotoInput') || document.createElement('input');
-  input.id = 'guidePhotoInput';
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.capture = 'environment';
-  input.style.display = 'none';
-  if (!input.parentNode) document.body.appendChild(input);
-  input.value = '';
-  input.onchange = function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      compressImage(ev.target.result, 1200, 0.8, (compressed) => {
-        currentItem['photo' + num] = compressed;
-        const numEl = document.getElementById('guideNum' + num);
-        const btnEl = document.getElementById('guideBtn' + num);
-        if (numEl) { numEl.classList.add('done'); numEl.textContent = '✓'; }
-        if (btnEl) { btnEl.classList.add('done'); btnEl.textContent = '✓ 完了'; btnEl.onclick = null; }
+let guidePhotoTarget = 0;
 
-        photosTaken++;
-        // 全部撮らなくても「次へ」を常に表示
-        document.getElementById('afterAllPhotos').style.display = 'block';
-      });
-    };
-    reader.readAsDataURL(file);
-  };
+function takeGuidePhoto(num) {
+  guidePhotoTarget = num;
+  const input = document.getElementById('guidePhotoInput2');
+  input.value = '';
   input.click();
+}
+
+function handleGuidePhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const num = guidePhotoTarget;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    compressImage(ev.target.result, 1200, 0.8, (compressed) => {
+      currentItem['photo' + num] = compressed;
+      const numEl = document.getElementById('guideNum' + num);
+      const btnEl = document.getElementById('guideBtn' + num);
+      if (numEl) { numEl.classList.add('done'); numEl.textContent = '✓'; }
+      if (btnEl) { btnEl.classList.add('done'); btnEl.textContent = '✓ 完了'; btnEl.onclick = null; }
+      photosTaken++;
+      document.getElementById('afterAllPhotos').style.display = 'block';
+    });
+  };
+  reader.readAsDataURL(file);
 }
 
 function goToStep4() {
