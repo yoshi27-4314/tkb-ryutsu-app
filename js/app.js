@@ -2601,7 +2601,6 @@ async function searchStock() {
   if (results.length === 0) {
     showToast('「' + q + '」は見つかりませんでした');
   } else {
-    showToast(results.length + '件見つかりました');
     renderSearchResults(results, q);
   }
 }
