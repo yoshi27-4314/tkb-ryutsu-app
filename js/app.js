@@ -589,13 +589,22 @@ function renderMemberTimeline() {
   // 全スタッフの出勤情報を取得（基本勤務時間をベースに、実際の出退勤があれば上書き）
   const dow = getTodayDow(); // 0=日〜6=土
   const members = [];
+  // 休み連絡の確認
+  const leaveRequests = JSON.parse(localStorage.getItem('f8_leave_requests') || '[]');
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const todayLeaves = leaveRequests.filter(r => r.date === todayStr && r.type === '欠勤');
+  const lateLeaves = leaveRequests.filter(r => r.date === todayStr && r.type === '遅刻');
+
   CONFIG.STAFF.forEach(s => {
-    // タイムライン非表示のスタッフ（浅野・三島等）
+    // タイムライン非表示のスタッフ（浅野等）
     if (s.showTimeline === false) return;
-    // 休日チェック（offDaysに今日の曜日が含まれていたら休み）
+    // 休日チェック
     if (s.offDays && s.offDays.includes(dow)) return;
     // 土日は全員休み
     if (dow === 0 || dow === 6) return;
+    // 欠勤連絡があれば除外
+    if (todayLeaves.some(l => l.staffName === s.name)) return;
 
     // localStorageに実際の出退勤データがあれば優先
     const saved = localStorage.getItem('f8_attendance_' + today + '_detail_' + s.name);
