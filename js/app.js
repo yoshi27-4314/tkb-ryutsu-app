@@ -585,10 +585,12 @@ function renderMemberTimeline() {
   const dow = new Date().getDay(); // 0=日〜6=土
   const members = [];
   CONFIG.STAFF.forEach(s => {
+    // タイムライン非表示のスタッフ（浅野・三島等）
+    if (s.showTimeline === false) return;
     // 休日チェック（offDaysに今日の曜日が含まれていたら休み）
     if (s.offDays && s.offDays.includes(dow)) return;
-    // 土日は全員休み（管理者以外）
-    if ((dow === 0 || dow === 6) && s.role !== 'admin') return;
+    // 土日は全員休み
+    if (dow === 0 || dow === 6) return;
 
     // localStorageに実際の出退勤データがあれば優先
     const saved = localStorage.getItem('f8_attendance_' + today + '_detail_' + s.name);

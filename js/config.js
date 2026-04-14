@@ -35,15 +35,18 @@ const CONFIG = {
   ],
 
   // スタッフ一覧（基本勤務時間・休日含む）
+  // offDays: 0=日,1=月,2=火,3=水,4=木,5=金,6=土
   STAFF: [
-    { name: '浅野儀頼', role: 'admin', start: '09:00', end: '18:00', breakMin: 60, offDays: [], pattern: '管理者' },
+    { name: '浅野儀頼', role: 'admin', start: '09:00', end: '18:00', breakMin: 60, offDays: [], pattern: '管理者', showTimeline: false },
     { name: '林和人', role: 'staff', start: '09:00', end: '16:00', breakMin: 60, offDays: [], pattern: '週5日' },
     { name: '横山優', role: 'staff', start: '10:00', end: '16:00', breakMin: 60, offDays: [3], pattern: '水休み' },
-    { name: '平野光雄', role: 'staff', start: '09:00', end: '15:30', breakMin: 60, offDays: [], pattern: '現場査定' },
     { name: '桃井侑菜', role: 'staff', start: '11:00', end: '15:00', breakMin: 0, offDays: [2,4], pattern: '月水金のみ' },
     { name: '伊藤佐和子', role: 'staff', start: '09:00', end: '15:00', breakMin: 60, offDays: [4], pattern: '木休み' },
     { name: '奥村亜優李', role: 'staff', start: '10:00', end: '16:00', breakMin: 60, offDays: [3], pattern: '水休み' },
-    { name: '鶴岡ありさ', role: 'staff', start: '09:00', end: '16:00', breakMin: 60, offDays: [], pattern: '' },
+    { name: '平野光雄', role: 'staff', start: '09:00', end: '16:00', breakMin: 60, offDays: [3], pattern: '水休み', company: 'クリアメンテ' },
+    { name: '松本豊彦', role: 'staff', start: '09:00', end: '16:00', breakMin: 60, offDays: [], pattern: '週5日', company: 'クリアメンテ' },
+    { name: '北瀬', role: 'staff', start: '09:00', end: '16:00', breakMin: 60, offDays: [3], pattern: '水休み', company: 'クリアメンテ' },
+    { name: '三島圭織', role: 'staff', start: '10:00', end: '16:00', breakMin: 60, offDays: [3], pattern: '水休み（4/30退職）', company: 'クリアメンテ', showTimeline: false },
   ],
 
   // 管理番号フォーマット
