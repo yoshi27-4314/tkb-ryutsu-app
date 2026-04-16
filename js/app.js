@@ -1017,22 +1017,14 @@ function updateHomeStats() {
 
 // ====== ボトルネック ======
 async function fetchInventoryStatus() {
+  // Supabase DBからステータス別件数を取得
+  if (!fegDb) return null;
   try {
-    const res = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/takeback-data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': CONFIG.SUPABASE_ANON_KEY },
-      body: JSON.stringify({ type: 'db', sheet: '商品マスタ' }),
-    });
-    const data = await res.json();
-    if (!data.success || !data.data?.sheets?.[0]) return null;
-    const rows = data.data.sheets[0].rows;
-    const headers = data.data.sheets[0].headers;
-    const statusIdx = headers.indexOf('ステータス');
-    if (statusIdx < 0) return null;
-
+    const { data, error } = await fegDb.from('tkb_items').select('status');
+    if (error || !data) return null;
     const counts = {};
-    rows.forEach(r => {
-      const s = r[statusIdx] || '未設定';
+    data.forEach(r => {
+      const s = r.status || '未設定';
       counts[s] = (counts[s] || 0) + 1;
     });
     return counts;
@@ -1043,25 +1035,22 @@ async function fetchInventoryStatus() {
 }
 
 function updateBottleneck(items) {
-  // スプレッドシートから取得した在庫ステータス（非同期で更新）
-  if (!window._inventoryLoaded) {
-    window._inventoryLoaded = true;
-    fetchInventoryStatus().then(counts => {
-      if (counts) {
-        window._inventoryCounts = counts;
-        updateBottleneckUI(counts);
-      }
-    });
-  }
+  // Supabase DBからステータス別件数を取得（非同期で更新）
+  fetchInventoryStatus().then(counts => {
+    if (counts) {
+      window._inventoryCounts = counts;
+      updateBottleneckUI(counts);
+    }
+  });
   // キャッシュがあれば使う
-  const inv = window._inventoryCounts || CONFIG.CURRENT_INVENTORY || {};
+  const inv = window._inventoryCounts || {};
   updateBottleneckUI(inv);
 }
 
 function updateBottleneckUI(inv) {
-  const satsueiWait = (inv['分荷確定'] || inv['撮影待ち'] || 0);
-  const shuppinWait = (inv['出品待ち'] || 0);
-  const konpoWait = (inv['梱包作業'] || inv['梱包待ち'] || 0);
+  const satsueiWait = (inv['分荷確定'] || 0) + (inv['撮影待ち'] || 0);
+  const shuppinWait = (inv['出品待ち'] || 0) + (inv['出品'] || 0);
+  const konpoWait = (inv['梱包作業'] || 0) + (inv['梱包待ち'] || 0) + (inv['入金確認済み'] || 0);
 
   const maxItems = 200;
 
@@ -4930,5 +4919,19 @@ document.addEventListener('DOMContentLoaded', () => {
   updateDate();
   if (!tryAutoLogin()) {
     // ログイン画面を表示（デフォルト）
+  }
+});
+
+// ===== 他タブからのlocalStorage変更を検知（エグゼクティブダッシュボードからの代理連絡等） =====
+window.addEventListener('storage', (e) => {
+  if (e.key === 'f8_leave_requests') {
+    // 休み連絡が他タブで変更された場合、当番・タイムライン・お知らせを更新
+    if (typeof renderMemberTimeline === 'function') renderMemberTimeline();
+    if (typeof renderTodayDuty === 'function') renderTodayDuty();
+    if (typeof updateHomeStats === 'function') updateHomeStats();
+  }
+  if (e.key === 'f8_takeback_data') {
+    // アイテム承認が他タブで変更された場合
+    if (typeof updateHomeStats === 'function') updateHomeStats();
   }
 });
