@@ -201,51 +201,35 @@
       </div>
     </div>
 
-    <!-- 在庫タブ -->
+    <!-- 在庫・出品管理タブ -->
     <div id="tab-stock" class="tab-content">
       <div class="search-bar">
         <input type="text" id="stockSearch" placeholder="管理番号 or キーワードで検索" class="search-input">
         <button class="search-btn" onclick="searchStock()">🔍</button>
       </div>
 
-      <!-- ステータスサマリー -->
-      <div class="section">
-        <h3 class="section-title">📊 ステータス一覧</h3>
-        <div class="status-summary" id="statusSummary">
-          <div class="status-row" onclick="filterByStatus('all')">
-            <span class="status-dot" style="background:#1C2541"></span>
-            <span class="status-name">全件</span>
-            <span class="status-count" id="countAll">0</span>
-          </div>
-          <div class="status-row" onclick="filterByStatus('登録済')">
-            <span class="status-dot" style="background:#006B3F"></span>
-            <span class="status-name">登録済（分荷確定）</span>
-            <span class="status-count" id="countRegistered">0</span>
-          </div>
-          <div class="status-row" onclick="filterByStatus('承認待ち')">
-            <span class="status-dot" style="background:#CE2029"></span>
-            <span class="status-name">承認待ち</span>
-            <span class="status-count" id="countApproval">0</span>
-          </div>
-          <div class="status-row" onclick="filterByStatus('出品中')">
-            <span class="status-dot" style="background:#C5A258"></span>
-            <span class="status-name">出品中</span>
-            <span class="status-count" id="countListed">0</span>
-          </div>
-          <div class="status-row" onclick="filterByStatus('出荷済')">
-            <span class="status-dot" style="background:#5a6272"></span>
-            <span class="status-name">出荷済</span>
-            <span class="status-count" id="countShipped">0</span>
-          </div>
-        </div>
+      <!-- ステータスタブ -->
+      <div class="status-tabs">
+        <button class="status-tab active" onclick="switchStatusTab('出品待ち')">📝 出品待ち <span id="tabCountWaiting">0</span></button>
+        <button class="status-tab" onclick="switchStatusTab('出品中')">🔄 出品中 <span id="tabCountListing">0</span></button>
+        <button class="status-tab" onclick="switchStatusTab('撮影待ち')">📷 撮影待ち <span id="tabCountPhoto">0</span></button>
+        <button class="status-tab" onclick="switchStatusTab('落札済み')">🎉 落札済 <span id="tabCountSold">0</span></button>
+        <button class="status-tab" onclick="switchStatusTab('all')">📦 全件 <span id="tabCountAll">0</span></button>
       </div>
 
+      <!-- 今日の実績 -->
+      <div class="today-stats" id="todayListingStats">
+        <span>📊 今日の出品: <strong id="todayListedCount">0</strong>件</span>
+        <span style="margin-left:16px;">⏱ 平均: <strong id="todayAvgTime">--</strong></span>
+      </div>
+
+      <!-- 商品リスト -->
       <div class="section">
-        <h3 class="section-title" id="stockListTitle">📦 全商品</h3>
         <div id="stockList" class="card-list"></div>
         <div id="stockEmpty" class="empty-msg" style="display:none">
-          <p>まだ商品がありません。📷 撮影タブから登録してください。</p>
+          <p>該当する商品がありません</p>
         </div>
+        <button id="stockRefreshBtn" class="btn btn-outline" onclick="loadItemsFromDB()" style="width:100%; margin-top:8px; font-size:12px;">🔄 最新データを読み込む</button>
       </div>
     </div>
 
@@ -1311,7 +1295,8 @@
 
 </div>
 
-<script src="js/config.js?v=20260416d"></script>
-<script src="js/app.js?v=20260416d"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js?v=20260417a"></script>
+<script src="js/app.js?v=20260417a"></script>
 </body>
 </html>

@@ -4,9 +4,13 @@
  */
 
 const CONFIG = {
-  // Supabase（AWAI共用・DBは使わない。Edge Functionのみ）
+  // Supabase AWAI（Edge Functionのみ：AI判定・Drive保存）
   SUPABASE_URL: 'https://njdnfvlucwasrafoepmu.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qZG5mdmx1Y3dhc3JhZm9lcG11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMTEzNjgsImV4cCI6MjA5MDg4NzM2OH0.jDjqf3nWqaQ0sMfDf-85dDQNbEhX90qLsOOhWJdDlM8',
+
+  // Supabase firsteight-group（DB：商品管理・リアルタイム同期）
+  FEG_SUPABASE_URL: 'https://peportftucwuxfnmaanr.supabase.co',
+  FEG_SUPABASE_KEY: 'sb_publishable_ndRcO6c962YBhShB3gP3MA_kHRmaofQ',
 
   // GAS（スプレッドシート書き込み）
   GAS_URL: 'https://script.google.com/macros/s/AKfycbx9JpYWvi3p0HgA9Bb0RLgEjkgzbF6iJRuAX7Ks2VL3hwIEnpuTR0J1ydtxegGKRXjh/exec',

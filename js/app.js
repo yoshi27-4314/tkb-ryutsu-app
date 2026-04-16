@@ -3,6 +3,406 @@
  * テイクバック流通事業 テスト運用版
  */
 
+// ====== Supabase DB接続（firsteight-group） ======
+let fegDb = null;
+let fegRealtime = null;
+let dbItems = []; // DB上の全商品
+let currentStatusTab = '出品待ち';
+
+function initSupabaseDB() {
+  if (!window.supabase) { console.warn('Supabase JS未読み込み'); return; }
+  fegDb = window.supabase.createClient(CONFIG.FEG_SUPABASE_URL, CONFIG.FEG_SUPABASE_KEY);
+
+  // リアルタイム購読（ロック変更を即座に反映）
+  fegRealtime = fegDb.channel('tkb_items_changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tkb_items' }, (payload) => {
+      console.log('[リアルタイム]', payload.eventType, payload.new?.mgmt_num);
+      loadItemsFromDB(); // 変更があったら再読み込み
+    })
+    .subscribe();
+}
+
+async function loadItemsFromDB() {
+  if (!fegDb) return;
+  try {
+    const { data, error } = await fegDb.from('tkb_items').select('*').order('priority_score', { ascending: false, nullsFirst: false });
+    if (error) { console.error('DB読み込みエラー:', error); return; }
+    dbItems = data || [];
+    renderStockListFromDB();
+    updateStatusTabCounts();
+    updateTodayStats();
+  } catch (err) {
+    console.error('DB接続エラー:', err);
+  }
+}
+
+// 商品をDBに追加
+async function addItemToDB(item) {
+  if (!fegDb) return null;
+  const row = {
+    mgmt_num: item.mgmtNum,
+    product_name: item.productName || '',
+    maker: item.maker || '',
+    channel: item.channel || '',
+    estimated_price_min: item.estimatedPrice?.min || 0,
+    estimated_price_max: item.estimatedPrice?.max || 0,
+    estimated_size: item.estimatedSize || '',
+    condition: item.condition || '',
+    location: item.location || '',
+    status: item.status || '撮影待ち',
+    listing_title: item.listingTitle || '',
+    listing_description: item.listingDescription || '',
+    listing_price: item.startPrice || 0,
+    staff_name: item.staffName || '',
+    judged_at: new Date().toISOString(),
+    priority_score: calcPriorityScore(item),
+  };
+  const { data, error } = await fegDb.from('tkb_items').insert(row).select();
+  if (error) console.error('DB追加エラー:', error);
+  return data;
+}
+
+// ステータス更新
+async function updateItemStatus(mgmtNum, status, extra) {
+  if (!fegDb) return;
+  const updates = { status, ...extra };
+  const { error } = await fegDb.from('tkb_items').update(updates).eq('mgmt_num', mgmtNum);
+  if (error) console.error('DB更新エラー:', error);
+}
+
+// ロック（出品開始）
+async function lockItem(mgmtNum, staffName) {
+  if (!fegDb) return false;
+  // 既にロックされていないか確認
+  const { data } = await fegDb.from('tkb_items').select('locked_by').eq('mgmt_num', mgmtNum).single();
+  if (data?.locked_by) {
+    showToast(`⚠️ ${data.locked_by}さんが作業中です`);
+    return false;
+  }
+  const { error } = await fegDb.from('tkb_items').update({
+    locked_by: staffName,
+    locked_at: new Date().toISOString(),
+    status: '出品作業中',
+  }).eq('mgmt_num', mgmtNum);
+  if (error) { console.error('ロックエラー:', error); return false; }
+  return true;
+}
+
+// ロック解除（出品完了）
+async function unlockItem(mgmtNum, workSeconds) {
+  if (!fegDb) return;
+  const { error } = await fegDb.from('tkb_items').update({
+    locked_by: null,
+    locked_at: null,
+    status: '出品中',
+    listed_at: new Date().toISOString(),
+    work_seconds: workSeconds,
+  }).eq('mgmt_num', mgmtNum);
+  if (error) console.error('ロック解除エラー:', error);
+}
+
+// 優先度スコア計算
+function calcPriorityScore(item) {
+  const now = new Date();
+  const judged = item.judgedAt ? new Date(item.judgedAt) : (item.judged_at ? new Date(item.judged_at) : now);
+  const days = Math.max(1, Math.floor((now - judged) / (1000 * 60 * 60 * 24)));
+
+  // サイズ係数
+  const sizeStr = (item.estimatedSize || item.estimated_size || '').toLowerCase();
+  let sizeFactor = 1;
+  if (sizeStr.includes('160') || sizeStr.includes('200') || sizeStr.includes('大')) sizeFactor = 3;
+  else if (sizeStr.includes('100') || sizeStr.includes('140') || sizeStr.includes('中')) sizeFactor = 2;
+
+  // 滞留コスト（日割り倉庫コスト ≒ ¥6,500/日 ÷ 全在庫で按分、簡易版）
+  const dailyCost = days * sizeFactor * 50; // 1日50円×サイズ係数
+
+  // 期待リターン
+  const maxPrice = item.estimatedPrice?.max || item.estimated_price_max || 1000;
+  const expectedReturn = Math.max(maxPrice * 0.85, 100); // 手数料15%引き、最低100円
+
+  return Math.round((dailyCost / expectedReturn) * 1000) / 10; // スコア（高い=優先）
+}
+
+// ステータスタブ切り替え
+function switchStatusTab(status) {
+  currentStatusTab = status;
+  document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
+  event.target.closest('.status-tab').classList.add('active');
+  renderStockListFromDB();
+}
+
+// ステータスタブの件数更新
+function updateStatusTabCounts() {
+  const counts = { '出品待ち': 0, '出品中': 0, '撮影待ち': 0, '落札済み': 0, all: 0 };
+  dbItems.forEach(i => {
+    counts.all++;
+    if (i.status === '出品待ち' || i.status === '分荷確定') counts['出品待ち']++;
+    else if (i.status === '出品中' || i.status === '出品作業中') counts['出品中']++;
+    else if (i.status === '撮影待ち') counts['撮影待ち']++;
+    else if (i.status === '落札済み' || i.status === '入金待ち' || i.status === '入金確認済み') counts['落札済み']++;
+  });
+  document.getElementById('tabCountWaiting').textContent = counts['出品待ち'];
+  document.getElementById('tabCountListing').textContent = counts['出品中'];
+  document.getElementById('tabCountPhoto').textContent = counts['撮影待ち'];
+  document.getElementById('tabCountSold').textContent = counts['落札済み'];
+  document.getElementById('tabCountAll').textContent = counts.all;
+}
+
+// 今日の実績
+function updateTodayStats() {
+  const today = new Date().toISOString().slice(0, 10);
+  const todayItems = dbItems.filter(i => i.listed_at && i.listed_at.startsWith(today));
+  document.getElementById('todayListedCount').textContent = todayItems.length;
+  const totalSec = todayItems.reduce((sum, i) => sum + (i.work_seconds || 0), 0);
+  if (todayItems.length > 0) {
+    const avg = Math.round(totalSec / todayItems.length);
+    const m = Math.floor(avg / 60);
+    const s = avg % 60;
+    document.getElementById('todayAvgTime').textContent = `${m}分${s}秒`;
+  } else {
+    document.getElementById('todayAvgTime').textContent = '--';
+  }
+}
+
+// DB商品リスト描画
+function renderStockListFromDB() {
+  const list = document.getElementById('stockList');
+  const empty = document.getElementById('stockEmpty');
+  if (!list) return;
+
+  let items = dbItems;
+  const search = document.getElementById('stockSearch')?.value?.trim() || '';
+
+  // ステータスフィルター
+  if (currentStatusTab !== 'all') {
+    items = items.filter(i => {
+      if (currentStatusTab === '出品待ち') return i.status === '出品待ち' || i.status === '分荷確定';
+      if (currentStatusTab === '出品中') return i.status === '出品中' || i.status === '出品作業中';
+      if (currentStatusTab === '撮影待ち') return i.status === '撮影待ち';
+      if (currentStatusTab === '落札済み') return i.status === '落札済み' || i.status === '入金待ち' || i.status === '入金確認済み';
+      return true;
+    });
+  }
+
+  // 検索フィルター
+  if (search) {
+    items = items.filter(i =>
+      (i.mgmt_num || '').includes(search) ||
+      (i.product_name || '').includes(search) ||
+      (i.maker || '').includes(search)
+    );
+  }
+
+  if (items.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = items.map(i => {
+    const isLocked = !!i.locked_by;
+    const lockedClass = isLocked ? 'locked' : '';
+    const lockBadge = isLocked ? `<span class="listing-lock-badge">🔒 ${i.locked_by}さん作業中</span>` : '';
+
+    // 優先度表示
+    const score = i.priority_score || 0;
+    let priorityClass = 'priority-low';
+    let priorityLabel = '低';
+    if (score >= 50) { priorityClass = 'priority-high'; priorityLabel = '高'; }
+    else if (score >= 20) { priorityClass = 'priority-mid'; priorityLabel = '中'; }
+
+    // 滞留日数
+    const days = i.judged_at ? Math.floor((new Date() - new Date(i.judged_at)) / (1000*60*60*24)) : 0;
+    const daysText = days > 7 ? `⚠️ ${days}日経過` : days > 0 ? `${days}日` : '今日';
+
+    // ステータスに応じたアクションボタン
+    let actionBtn = '';
+    if ((i.status === '出品待ち' || i.status === '分荷確定') && !isLocked) {
+      actionBtn = `<button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); startListing('${i.mgmt_num}')">▶ 出品開始</button>`;
+    } else if (i.status === '出品作業中' && i.locked_by === (currentUser?.name || '')) {
+      actionBtn = `<button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); openListingWork('${i.mgmt_num}')">📝 出品画面</button>`;
+    }
+
+    return `
+      <div class="listing-work-card ${lockedClass}" onclick="openItemDetailFromDB('${i.mgmt_num}')">
+        ${lockBadge}
+        <div>
+          <span class="listing-priority ${priorityClass}">${priorityLabel}</span>
+          <span class="listing-mgmt">${i.mgmt_num}</span>
+        </div>
+        <div class="listing-name">${escapeHtml(i.product_name || '—')}</div>
+        <div class="listing-meta">${escapeHtml(i.channel || '')} ｜ ¥${(i.estimated_price_max || 0).toLocaleString()} ｜ ${escapeHtml(i.location || '未設定')}</div>
+        <div class="listing-days">${daysText} ｜ ${escapeHtml(i.staff_name || '')}</div>
+        <div class="listing-actions">${actionBtn}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 出品開始（ロック + ストップウォッチ）
+let listingTimer = null;
+let listingStartTime = null;
+let listingMgmtNum = null;
+
+async function startListing(mgmtNum) {
+  const ok = await lockItem(mgmtNum, currentUser.name);
+  if (!ok) return;
+  showToast('▶ 出品開始！');
+  listingMgmtNum = mgmtNum;
+  listingStartTime = Date.now();
+  openListingWork(mgmtNum);
+}
+
+function openListingWork(mgmtNum) {
+  const item = dbItems.find(i => i.mgmt_num === mgmtNum);
+  if (!item) return;
+
+  listingMgmtNum = mgmtNum;
+  if (!listingStartTime) listingStartTime = Date.now();
+
+  // 出品詳細モーダルを構築
+  const html = `
+    <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh; overflow-y:auto;">
+      <div class="modal-header">
+        <h3>${item.mgmt_num}</h3>
+        <button class="modal-close" onclick="closeListingWork()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="stopwatch" id="listingStopwatch">00:00</div>
+
+        <div class="listing-detail-section">
+          <div class="listing-copy-row">
+            <span class="listing-copy-label">タイトル</span>
+            <span class="listing-copy-value" id="lcTitle">${escapeHtml(item.listing_title || item.product_name || '')}</span>
+            <button class="listing-copy-btn" onclick="copyToClip('lcTitle')">コピー</button>
+          </div>
+          <div class="listing-copy-row">
+            <span class="listing-copy-label">説明文</span>
+            <span class="listing-copy-value" id="lcDesc" style="white-space:pre-wrap; max-height:120px; overflow-y:auto;">${escapeHtml(item.listing_description || '')}</span>
+            <button class="listing-copy-btn" onclick="copyToClip('lcDesc')">コピー</button>
+          </div>
+          <div class="listing-copy-row">
+            <span class="listing-copy-label">開始価格</span>
+            <span class="listing-copy-value" id="lcPrice">¥${(item.listing_price || item.estimated_price_min || 0).toLocaleString()}</span>
+            <button class="listing-copy-btn" onclick="copyToClip('lcPrice')">コピー</button>
+          </div>
+          <div class="listing-copy-row">
+            <span class="listing-copy-label">チャンネル</span>
+            <span class="listing-copy-value">${escapeHtml(item.channel || '')}</span>
+          </div>
+          <div class="listing-copy-row">
+            <span class="listing-copy-label">サイズ</span>
+            <span class="listing-copy-value">${escapeHtml(item.estimated_size || '—')}</span>
+          </div>
+          <div class="listing-copy-row">
+            <span class="listing-copy-label">状態</span>
+            <span class="listing-copy-value">${escapeHtml(item.condition || '—')}</span>
+          </div>
+          <div class="listing-copy-row">
+            <span class="listing-copy-label">保管場所</span>
+            <span class="listing-copy-value">${escapeHtml(item.location || '—')}</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="completeListing()" style="width:100%; margin-top:16px;">✅ 出品完了</button>
+        <button class="btn btn-outline" onclick="cancelListing()" style="width:100%; margin-top:8px;">⏸ 中断（ロック解除）</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('itemDetailOverlay').innerHTML = html;
+  document.getElementById('itemDetailOverlay').classList.add('open');
+
+  // ストップウォッチ開始
+  if (listingTimer) clearInterval(listingTimer);
+  listingTimer = setInterval(updateStopwatch, 1000);
+  updateStopwatch();
+}
+
+function updateStopwatch() {
+  if (!listingStartTime) return;
+  const elapsed = Math.floor((Date.now() - listingStartTime) / 1000);
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
+  const el = document.getElementById('listingStopwatch');
+  if (el) el.textContent = `${m}:${s}`;
+}
+
+async function completeListing() {
+  if (!listingMgmtNum) return;
+  const elapsed = Math.floor((Date.now() - listingStartTime) / 1000);
+  await unlockItem(listingMgmtNum, elapsed);
+
+  // GASにも記録
+  sendToGAS({
+    action: 'listing_complete',
+    kanri_bango: listingMgmtNum,
+    staff_id: currentUser.name,
+    work_seconds: elapsed,
+    timestamp: formatTimestamp(),
+  });
+
+  showToast(`✅ 出品完了（${Math.floor(elapsed/60)}分${elapsed%60}秒）`);
+  closeListingWork();
+  loadItemsFromDB();
+}
+
+async function cancelListing() {
+  if (!listingMgmtNum) return;
+  // ロック解除してステータスを戻す
+  await fegDb.from('tkb_items').update({
+    locked_by: null, locked_at: null, status: '出品待ち'
+  }).eq('mgmt_num', listingMgmtNum);
+  showToast('⏸ 中断しました');
+  closeListingWork();
+  loadItemsFromDB();
+}
+
+function closeListingWork() {
+  if (listingTimer) { clearInterval(listingTimer); listingTimer = null; }
+  listingStartTime = null;
+  listingMgmtNum = null;
+  document.getElementById('itemDetailOverlay').classList.remove('open');
+}
+
+function copyToClip(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const text = el.textContent.replace(/^¥/, '');
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('📋 コピーしました');
+  }).catch(() => {
+    // フォールバック
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('📋 コピーしました');
+  });
+}
+
+function openItemDetailFromDB(mgmtNum) {
+  const item = dbItems.find(i => i.mgmt_num === mgmtNum);
+  if (!item) return;
+  // 既存の商品詳細モーダルを利用
+  selectedItem = {
+    mgmtNum: item.mgmt_num,
+    productName: item.product_name,
+    maker: item.maker,
+    channel: item.channel,
+    estimatedPrice: { min: item.estimated_price_min, max: item.estimated_price_max },
+    condition: item.condition,
+    estimatedSize: item.estimated_size,
+    location: item.location,
+    status: item.status,
+    shipped: item.status === '出荷済',
+  };
+  openItemDetail(mgmtNum);
+}
+
 // ====== 作業中データの保持（リロード・戻る対策） ======
 const SESSION_KEY = 'f8_working_session';
 
@@ -474,6 +874,9 @@ function showMainScreen() {
   }
   updateHomeStats();
   renderStockList();
+  // Supabase DB初期化＆商品読み込み
+  initSupabaseDB();
+  loadItemsFromDB();
   checkTodayAttendance();
   startNotificationPolling();
   loadProfileImages();
@@ -521,6 +924,7 @@ function switchTab(tab) {
   }
   if (tab === 'stock') {
     renderStockList();
+    loadItemsFromDB();
   }
   if (tab === 'mypage') {
     renderPastNotices();
@@ -1697,7 +2101,23 @@ async function finalizeAcceptJudgment() {
       approvalReason: currentItem.approvalReason,
       score: currentItem.score,
       staffName: currentUser.name,
-      status: '分荷確定',
+      status: '撮影待ち',
+    });
+
+    // Supabase DBにも追加（リアルタイム同期用）
+    addItemToDB({
+      mgmtNum: mgmtNum,
+      productName: currentItem.productName,
+      maker: currentItem.maker,
+      channel: currentItem.channel,
+      estimatedPrice: currentItem.estimatedPrice,
+      estimatedSize: currentItem.estimatedSize,
+      condition: currentItem.condition,
+      startPrice: currentItem.startPrice,
+      listingTitle: currentItem.listingTitle,
+      listingDescription: currentItem.listingDescription,
+      staffName: currentUser.name,
+      status: '撮影待ち',
     });
 
   } catch (err) {
@@ -2024,6 +2444,9 @@ async function completeRegistration(loc) {
       status: '出品待ち',
     });
   }
+
+  // Supabase DBのステータスを出品待ちに更新
+  updateItemStatus(mgmtNum, '出品待ち', { location: loc });
 
   // Google Driveに写真アップロード（バックグラウンド）
   uploadToDrive(mgmtNum).then(result => {
