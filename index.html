@@ -58,7 +58,10 @@
         <span class="notif-icon">🔔</span>
         <span id="notifBadge" class="notif-badge" style="display:none">3</span>
       </button>
-      <button class="icon-btn" onclick="switchTab('mypage')">⚙️</button>
+      <button class="icon-btn header-avatar-btn" onclick="switchTab('mypage')">
+        <img id="headerAvatarImg" class="header-avatar-img" style="display:none;" alt="">
+        <span id="headerAvatarFallback">👤</span>
+      </button>
     </div>
   </header>
 
@@ -79,7 +82,7 @@
 
       <!-- ボトルネック -->
       <div class="section">
-        <h3 class="section-title">⚠️ ボトルネック</h3>
+        <h3 class="section-title">⚠️ いまのボトルネック</h3>
         <div class="bottleneck-list" id="bottleneckList">
           <div class="bottleneck-item" id="bnSatsuei">
             <div class="bn-icon">📸</div>
@@ -110,7 +113,7 @@
 
       <!-- チーム進捗 -->
       <div class="section">
-        <h3 class="section-title">📊 チーム進捗</h3>
+        <h3 class="section-title">📊 今日のチーム進捗</h3>
         <div class="kpi-grid">
           <div class="kpi-item">
             <div class="kpi-header">
@@ -161,14 +164,9 @@
         </div>
       </div>
 
-      <button class="camera-start-btn" onclick="switchTab('camera')">
-        <span class="camera-start-icon">📷</span>
-        <span>撮影を開始する</span>
-      </button>
-
       <div class="quick-actions">
-        <button class="quick-btn" onclick="openSalesModal()">
-          <span>💰</span><span>売上登録</span>
+        <button class="quick-btn" onclick="switchTab('stock')">
+          <span>📦</span><span>在庫検索</span>
         </button>
         <button class="quick-btn" onclick="openReceiptModal()">
           <span>🧾</span><span>経費精算</span>
@@ -279,6 +277,43 @@
           <div class="detail-row">
             <span class="detail-label">ステータス</span>
             <span class="detail-value" id="detailStatus">—</span>
+          </div>
+
+          <!-- 写真追加セクション -->
+          <div id="photoAddSection" style="margin-top:20px; border-top: 2px solid var(--gold); padding-top:16px;">
+            <h3 class="section-title">📷 写真を追加</h3>
+            <div id="photoAddSlots" class="photo-add-grid">
+              <div class="photo-add-slot" onclick="document.getElementById('photoAddInput1').click()">
+                <span id="photoAddLabel1" class="photo-add-plus">＋</span>
+                <img id="photoAddPreview1" class="photo-add-img" style="display:none;">
+                <input type="file" id="photoAddInput1" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoAdd(event, 1)">
+              </div>
+              <div class="photo-add-slot" onclick="document.getElementById('photoAddInput2').click()">
+                <span id="photoAddLabel2" class="photo-add-plus">＋</span>
+                <img id="photoAddPreview2" class="photo-add-img" style="display:none;">
+                <input type="file" id="photoAddInput2" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoAdd(event, 2)">
+              </div>
+              <div class="photo-add-slot" onclick="document.getElementById('photoAddInput3').click()">
+                <span id="photoAddLabel3" class="photo-add-plus">＋</span>
+                <img id="photoAddPreview3" class="photo-add-img" style="display:none;">
+                <input type="file" id="photoAddInput3" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoAdd(event, 3)">
+              </div>
+              <div class="photo-add-slot" onclick="document.getElementById('photoAddInput4').click()">
+                <span id="photoAddLabel4" class="photo-add-plus">＋</span>
+                <img id="photoAddPreview4" class="photo-add-img" style="display:none;">
+                <input type="file" id="photoAddInput4" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoAdd(event, 4)">
+              </div>
+              <div class="photo-add-slot" onclick="document.getElementById('photoAddInput5').click()">
+                <span id="photoAddLabel5" class="photo-add-plus">＋</span>
+                <img id="photoAddPreview5" class="photo-add-img" style="display:none;">
+                <input type="file" id="photoAddInput5" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoAdd(event, 5)">
+              </div>
+            </div>
+            <div id="photoAddLoading" style="display:none; text-align:center; padding:12px;">
+              <div class="loading-spinner"></div>
+              <p style="margin-top:8px; color:var(--sub); font-size:13px;">Driveにアップロード中...</p>
+            </div>
+            <button id="photoAddBtn" class="btn btn-primary" onclick="uploadAddedPhotos()" style="width:100%; margin-top:12px; display:none;">📤 Google Driveにアップロード</button>
           </div>
 
           <!-- 出荷登録セクション -->
@@ -541,6 +576,35 @@
     </div>
 
     <!-- 撮影タブ -->
+    <!-- 取引ナビタブ -->
+    <div id="tab-torihiki" class="tab-content">
+      <div class="section">
+        <h3 class="section-title">📋 取引ナビ</h3>
+        <p style="color:var(--sub); font-size:13px; margin-bottom:16px;">取引画面のスクリーンショットを撮ると、AIがステータスを自動更新します。</p>
+        <div class="torihiki-upload-area" id="torihikiUploadArea" onclick="document.getElementById('torihikiPhotoInput').click()">
+          <div class="torihiki-upload-icon">📸</div>
+          <div class="torihiki-upload-text">取引ナビのスクショを撮影</div>
+          <div class="torihiki-upload-sub">タップしてカメラを起動</div>
+        </div>
+        <input type="file" id="torihikiPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleTorihikiPhoto(event)">
+        <div id="torihikiLoading" style="display:none; text-align:center; padding:24px;">
+          <div class="loading-spinner"></div>
+          <p style="margin-top:8px; color:var(--sub);">AIが読み取り中...</p>
+        </div>
+        <div id="torihikiResult" style="display:none;"></div>
+      </div>
+
+      <!-- 売上登録セクション -->
+      <div class="section">
+        <h3 class="section-title">💰 売上登録</h3>
+        <p style="color:var(--sub); font-size:13px; margin-bottom:16px;">落札一覧のスクショから一括登録、または手入力で登録できます。</p>
+        <div class="torihiki-btn-group">
+          <button class="btn btn-primary" style="flex:1;" onclick="openSalesModal()">📸 スクショで登録</button>
+          <button class="btn btn-outline" style="flex:1;" onclick="openSalesManualDirect()">✏️ 手入力</button>
+        </div>
+      </div>
+    </div>
+
     <div id="tab-camera" class="tab-content">
       <!-- ステップ0: 種別選択 -->
       <div id="cameraStep0" class="camera-step active">
@@ -1138,6 +1202,14 @@
         </div>
       </div>
 
+      <!-- 過去のお知らせ -->
+      <div class="section">
+        <h3 class="section-title collapsible" onclick="toggleSection('pastNoticeBody')">📋 過去のお知らせ <span id="pastNoticeBodyArrow" class="collapse-arrow">▼</span></h3>
+        <div id="pastNoticeBody" class="collapsible-body" style="display:none">
+          <div id="pastNoticeList"></div>
+        </div>
+      </div>
+
       <!-- 管理者用: 権限設定（浅野のみ表示） -->
       <div id="adminPermSection" class="section" style="display:none">
         <h3 class="section-title collapsible" onclick="toggleSection('permBody')">🔐 権限設定 <span id="permBodyArrow" class="collapse-arrow">▼</span></h3>
@@ -1166,21 +1238,21 @@
       <span class="nav-icon">🏠</span>
       <span class="nav-label">ホーム</span>
     </button>
-    <button class="nav-item" onclick="switchTab('stock')" data-tab="stock">
-      <span class="nav-icon">📦</span>
-      <span class="nav-label">在庫</span>
-    </button>
-    <button class="nav-item nav-camera" onclick="switchTab('camera')" data-tab="camera">
-      <span class="nav-icon">📷</span>
-      <span class="nav-label">撮影</span>
-    </button>
     <button class="nav-item" onclick="switchTab('chat')" data-tab="chat">
       <span class="nav-icon">💬</span>
       <span class="nav-label">チャット</span>
     </button>
-    <button class="nav-item" onclick="switchTab('mypage')" data-tab="mypage">
-      <span class="nav-icon">👤</span>
-      <span class="nav-label">マイページ</span>
+    <button class="nav-item nav-camera" onclick="switchTab('camera')" data-tab="camera">
+      <span class="nav-icon">📷</span>
+      <span class="nav-label">分荷判定</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('stock')" data-tab="stock">
+      <span class="nav-icon">🚚</span>
+      <span class="nav-label">出荷登録</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('torihiki')" data-tab="torihiki">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">取引ナビ</span>
     </button>
   </nav>
 

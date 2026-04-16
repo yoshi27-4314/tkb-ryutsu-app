@@ -1284,3 +1284,65 @@ body[data-theme="female"] {
 .mention-divider {
   height: 1px; background: #2A3553; margin: 4px 16px;
 }
+
+/* ====== 写真追加 ====== */
+.photo-add-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px;
+}
+.photo-add-slot {
+  aspect-ratio: 1; border: 2px dashed rgba(197,162,88,0.4); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  position: relative; overflow: hidden; background: rgba(255,255,255,0.03);
+}
+.photo-add-slot:active { background: rgba(197,162,88,0.1); }
+.photo-add-plus { font-size: 24px; color: var(--gold); }
+.photo-add-img {
+  width: 100%; height: 100%; object-fit: cover; position: absolute;
+  top: 0; left: 0; border-radius: 8px;
+}
+
+/* ====== お知らせ既読 ====== */
+.notice-item { cursor: pointer; position: relative; }
+.notice-read { opacity: 0.5; }
+.notice-unread-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--danger);
+  flex-shrink: 0; margin-left: 8px;
+}
+
+/* ====== ヘッダーアバター ====== */
+.header-avatar-btn { position: relative; padding: 0; width: 32px; height: 32px; }
+.header-avatar-img {
+  width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--gold);
+}
+.header-avatar-btn .header-avatar-img + #headerAvatarFallback { display: none; }
+
+/* ====== 取引ナビ ====== */
+.torihiki-upload-area {
+  background: var(--card); border: 2px dashed var(--gold); border-radius: 16px;
+  padding: 40px 20px; text-align: center; cursor: pointer;
+  transition: background 0.2s;
+}
+.torihiki-upload-area:active {
+  background: rgba(197, 162, 88, 0.1);
+}
+.torihiki-upload-icon { font-size: 48px; margin-bottom: 12px; }
+.torihiki-upload-text { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.torihiki-upload-sub { font-size: 12px; color: var(--sub); }
+.torihiki-result-card {
+  background: var(--card); border-radius: 12px; padding: 16px; margin-top: 16px;
+}
+.torihiki-result-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.torihiki-result-row:last-child { border-bottom: none; }
+.torihiki-result-label { font-size: 13px; color: var(--sub); }
+.torihiki-result-value { font-size: 14px; color: var(--text); font-weight: 500; }
+.torihiki-status-badge {
+  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+}
+.torihiki-btn-group {
+  display: flex; gap: 8px; margin-top: 16px;
+}

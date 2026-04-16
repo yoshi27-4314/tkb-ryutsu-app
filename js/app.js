@@ -369,13 +369,6 @@ function showMainScreen() {
     avatarEmoji.textContent = givenName;
   }
   if (currentUser.isAdmin) {
-    document.getElementById('notifBadge').style.display = 'flex';
-    // 管理者用: 権限設定セクション表示
-    const adminPerm = document.getElementById('adminPermSection');
-    if (adminPerm) {
-      adminPerm.style.display = '';
-      renderPermissionSettings();
-    }
     // 管理者は出退勤・休み連絡・個人実績を非表示
     ['attendanceSection', 'leaveRequestSection', 'myTodaySection'].forEach(id => {
       const el = document.getElementById(id);
@@ -439,6 +432,9 @@ function switchTab(tab) {
   }
   if (tab === 'stock') {
     renderStockList();
+  }
+  if (tab === 'mypage') {
+    renderPastNotices();
   }
 }
 
@@ -602,61 +598,160 @@ function isTsuhanChannel(channelNum) {
   return ch && ch.type === 'tsuhan';
 }
 
-// ====== お知らせ（実データ） ======
-function updateNoticeList(items) {
-  const list = document.getElementById('noticeList');
-  const emptyEl = document.getElementById('emptyNotice');
-  if (!list) return;
+// ====== お知らせ（既読管理） ======
+const NOTICE_READ_KEY = 'f8_notice_read';
+const NOTICE_ALL_KEY = 'f8_notice_all';
+const NOTICE_EXPIRY_DAYS = 7;
 
+function getReadNotices() {
+  return JSON.parse(localStorage.getItem(NOTICE_READ_KEY) || '{}');
+}
+
+function markNoticeRead(noticeId) {
+  const read = getReadNotices();
+  read[noticeId] = new Date().toISOString();
+  localStorage.setItem(NOTICE_READ_KEY, JSON.stringify(read));
+  // ホームのお知らせを再描画
+  updateNoticeList(_lastNoticeItems || []);
+}
+
+function isNoticeRead(noticeId) {
+  const read = getReadNotices();
+  return !!read[noticeId];
+}
+
+function isWithinDays(dateStr, days) {
+  if (!dateStr) return true;
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = (now - d) / (1000 * 60 * 60 * 24);
+  return diff <= days;
+}
+
+let _lastNoticeItems = [];
+
+// ====== お知らせ（実データ） ======
+function buildAllNotices(items) {
   const notices = [];
 
   // アプリ更新通知（未読分）
   const unreadChanges = getUnreadChanges();
-  unreadChanges.forEach(c => {
+  unreadChanges.forEach((c, i) => {
     notices.push({
+      id: 'update_' + i + '_' + c.text.slice(0, 20),
       badge: 'notice-update', label: c.type,
       text: c.text,
       isUpdate: true,
+      createdAt: new Date().toISOString(),
     });
   });
 
   // 承認待ち
   items.filter(i => i.needsApproval && !i.approved && !i.rejected).forEach(i => {
     notices.push({
+      id: 'approval_' + i.mgmtNum,
       badge: 'notice-danger', label: '承認待ち',
       text: `${i.mgmtNum} ${i.productName || '商品'} ¥${i.estimatedPrice?.max?.toLocaleString() || '---'}`,
+      createdAt: i.createdAt || new Date().toISOString(),
     });
   });
 
   // 承認済み
-  items.filter(i => i.approved).slice(0, 3).forEach(i => {
+  items.filter(i => i.approved).forEach(i => {
     notices.push({
+      id: 'approved_' + i.mgmtNum,
       badge: 'notice-approve', label: '承認済',
       text: `${i.mgmtNum} ${i.channel || ''}で出品OK`,
+      createdAt: i.approvedAt || i.createdAt || new Date().toISOString(),
     });
   });
 
-  // 出荷済み（今日）
-  const today = new Date().toISOString().slice(0, 10);
-  items.filter(i => i.shipped && i.shippedAt && i.shippedAt.startsWith(today)).forEach(i => {
+  // 出荷済み
+  items.filter(i => i.shipped && i.shippedAt).forEach(i => {
     notices.push({
+      id: 'shipped_' + i.mgmtNum,
       badge: 'notice-gold', label: '出荷済',
       text: `${i.mgmtNum} ${i.carrier || ''} で出荷完了`,
+      createdAt: i.shippedAt,
     });
   });
 
-  if (notices.length === 0) {
-    if (emptyEl) emptyEl.style.display = 'block';
+  return notices;
+}
+
+function updateNoticeList(items) {
+  _lastNoticeItems = items;
+  const list = document.getElementById('noticeList');
+  if (!list) return;
+
+  const allNotices = buildAllNotices(items);
+
+  // 全件をLocalStorageに保存（マイページ用）
+  localStorage.setItem(NOTICE_ALL_KEY, JSON.stringify(allNotices));
+
+  // ホーム表示: 未読 or 1週間以内
+  const homeNotices = allNotices.filter(n =>
+    !isNoticeRead(n.id) || isWithinDays(n.createdAt, NOTICE_EXPIRY_DAYS)
+  );
+
+  if (homeNotices.length === 0) {
     list.innerHTML = '<p class="empty-notice">新しいお知らせはありません</p>';
     return;
   }
 
-  list.innerHTML = notices.map(n => `
-    <div class="notice-item">
+  const visibleNotices = homeNotices.slice(0, 3);
+  const hiddenNotices = homeNotices.slice(3);
+
+  let html = visibleNotices.map(n => renderNoticeItem(n)).join('');
+
+  if (hiddenNotices.length > 0) {
+    html += `<div id="noticeHidden" style="display:none;">` +
+      hiddenNotices.map(n => renderNoticeItem(n)).join('') + `</div>`;
+    html += `<button class="btn btn-outline" style="width:100%; margin-top:8px; font-size:12px;" onclick="toggleNotices(this)">他 ${hiddenNotices.length} 件を表示</button>`;
+  }
+
+  list.innerHTML = html;
+}
+
+function renderNoticeItem(n) {
+  const isRead = isNoticeRead(n.id);
+  const readClass = isRead ? 'notice-read' : '';
+  return `
+    <div class="notice-item ${readClass}" onclick="markNoticeRead('${n.id}')">
       <span class="notice-badge ${n.badge}">${n.label}</span>
       <span>${escapeHtml(n.text)}</span>
+      ${!isRead ? '<span class="notice-unread-dot"></span>' : ''}
     </div>
-  `).join('');
+  `;
+}
+
+function renderPastNotices() {
+  const list = document.getElementById('pastNoticeList');
+  if (!list) return;
+  const allNotices = JSON.parse(localStorage.getItem(NOTICE_ALL_KEY) || '[]');
+  if (allNotices.length === 0) {
+    list.innerHTML = '<p class="empty-notice">お知らせはありません</p>';
+    return;
+  }
+  list.innerHTML = allNotices.map(n => {
+    const dateStr = n.createdAt ? new Date(n.createdAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }) : '';
+    return `
+      <div class="notice-item notice-read">
+        <span class="notice-badge ${n.badge}">${n.label}</span>
+        <span style="flex:1;">${escapeHtml(n.text)}</span>
+        <span style="font-size:11px; color:var(--sub); white-space:nowrap;">${dateStr}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleNotices(btn) {
+  const hidden = document.getElementById('noticeHidden');
+  if (!hidden) return;
+  const isOpen = hidden.style.display !== 'none';
+  hidden.style.display = isOpen ? 'none' : '';
+  btn.textContent = isOpen ? '閉じる' : btn.dataset.label;
+  if (!btn.dataset.label) btn.dataset.label = btn.textContent;
 }
 
 // ====== 出勤メンバータイムライン ======
@@ -1446,7 +1541,7 @@ function completeConditionCheck() {
   showToast('状態確認を反映しました。内容を確認してOKを押してください。');
 }
 
-function finalizeAcceptJudgment() {
+async function finalizeAcceptJudgment() {
   // 渡辺質店の場合、按分比率を確認
   if (currentCategory === 'watanabe') {
     const rate = document.getElementById('anbunRate').value;
@@ -1465,21 +1560,96 @@ function finalizeAcceptJudgment() {
   if (currentBundle === 'set') {
     currentItem.channel += '（まとめ）';
   }
+
+  // 分荷判定確定時に管理番号を発行（GAS一元管理）
+  try {
+    const mgmtNum = await requestMgmtNumFromGAS();
+    currentItem.mgmtNum = mgmtNum;
+    showToast(`📋 ${mgmtNum} を発行しました`);
+
+    // 判定データをGASに即時記録（翌日検索できるように）
+    sendToGAS({
+      action: 'bunka_kakutei',
+      kanri_bango: mgmtNum,
+      kakutei_channel: currentItem.channel || '',
+      item_name: currentItem.productName || '',
+      maker: currentItem.maker || '',
+      model_number: currentItem.modelNumber || '',
+      condition: currentItem.condition || '',
+      predicted_price: currentItem.estimatedPrice ? `¥${currentItem.estimatedPrice.min}〜¥${currentItem.estimatedPrice.max}` : '',
+      start_price: String(currentItem.startPrice || ''),
+      score: String(currentItem.score || ''),
+      estimated_size: currentItem.estimatedSize || '',
+      staff_id: currentUser.name,
+      needs_approval: currentItem.needsApproval ? 'はい' : 'いいえ',
+      approval_reason: currentItem.approvalReason || '',
+      status: '分荷確定',
+      timestamp: formatTimestamp(),
+    });
+
+    // ローカルにも保存（在庫検索で見つかるように）
+    addItem({
+      mgmtNum: mgmtNum,
+      productName: currentItem.productName,
+      maker: currentItem.maker,
+      modelNumber: currentItem.modelNumber,
+      category: currentItem.category,
+      channel: currentItem.channel,
+      channelNumber: currentItem.channelNumber,
+      estimatedPrice: currentItem.estimatedPrice,
+      startPrice: currentItem.startPrice,
+      condition: currentItem.condition,
+      conditionNote: currentItem.conditionNote,
+      estimatedSize: currentItem.estimatedSize,
+      shippingSize: currentItem.shippingSize,
+      needsApproval: currentItem.needsApproval,
+      approvalReason: currentItem.approvalReason,
+      score: currentItem.score,
+      staffName: currentUser.name,
+      status: '分荷確定',
+    });
+
+  } catch (err) {
+    // GASが使えない場合はローカル採番にフォールバック
+    const mgmtNum = generateManagementNumber();
+    currentItem.mgmtNum = mgmtNum;
+    showToast(`📋 ${mgmtNum} を発行しました（オフライン）`);
+  }
+
   buildPhotoGuide();
   showCameraStep(3);
+}
+
+// GASから管理番号を取得（委託元ごとにプレフィックス付き）
+async function requestMgmtNumFromGAS() {
+  const url = IS_TEST_MODE ? CONFIG.GAS_URL_TEST : CONFIG.GAS_URL;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'generate_mgmt_num',
+      category: currentCategory || 'jisha',
+    }),
+  });
+  const result = await response.json();
+  if (result.ok && result.mgmtNum) {
+    return result.mgmtNum;
+  }
+  throw new Error('GAS採番失敗');
 }
 
 function consultAsano() {
   showToast('🙋 浅野さんに相談を送信しました');
   currentItem.needsApproval = true;
   currentItem.approvalReason = '手動相談';
-  // GASに相談データを送る
+  // GASに相談データを送る → Google Chatに通知
   sendToGAS({
-    action: 'consultation',
-    staff_id: currentUser.name,
-    item_name: currentItem.productName || '',
+    action: 'soudan',
+    staff: currentUser.name,
+    itemName: currentItem.productName || '',
+    mgmtNum: currentItem.mgmtNum || '',
     channel: currentItem.channel || '',
-    price: currentItem.estimatedPrice?.max || '',
+    message: `${currentItem.channel || ''} ¥${currentItem.estimatedPrice?.max?.toLocaleString() || '---'}`,
     reason: '手動相談',
     timestamp: formatTimestamp(),
   });
@@ -1610,8 +1780,8 @@ function selectLocation(loc) {
 async function completeRegistration(loc) {
   // 作業セッションクリア
   clearWorkingSession();
-  // 管理番号生成
-  const mgmtNum = generateManagementNumber();
+  // 管理番号は判定確定時に既に発行済み
+  const mgmtNum = currentItem.mgmtNum || generateManagementNumber();
   currentItem.mgmtNum = mgmtNum;
   currentItem.location = loc;
 
@@ -1633,29 +1803,41 @@ async function completeRegistration(loc) {
     listingSection.style.display = 'none';
   }
 
-  // ローカルに保存
-  addItem({
-    mgmtNum: mgmtNum,
-    productName: currentItem.productName,
-    maker: currentItem.maker,
-    modelNumber: currentItem.modelNumber,
-    category: currentItem.category,
-    channel: currentItem.channel,
-    channelNumber: currentItem.channelNumber,
-    estimatedPrice: currentItem.estimatedPrice,
-    startPrice: currentItem.startPrice,
-    condition: currentItem.condition,
-    conditionNote: currentItem.conditionNote,
-    estimatedSize: currentItem.estimatedSize,
-    shippingSize: currentItem.shippingSize,
-    needsApproval: currentItem.needsApproval,
-    approvalReason: currentItem.approvalReason,
-    score: currentItem.score,
-    location: loc,
-    listingTitle: currentItem.listingTitle,
-    listingDescription: currentItem.listingDescription,
-    staffName: currentUser.name,
-  });
+  // ローカルデータを更新（判定確定時に登録済みのデータに保管場所・出品情報を追記）
+  const data = loadLocalData();
+  const idx = data.items.findIndex(i => i.mgmtNum === mgmtNum);
+  if (idx >= 0) {
+    data.items[idx].location = loc;
+    data.items[idx].listingTitle = currentItem.listingTitle;
+    data.items[idx].listingDescription = currentItem.listingDescription;
+    data.items[idx].status = '出品待ち';
+    saveLocalData(data);
+  } else {
+    // 判定確定時にローカル保存されていなかった場合（フォールバック）
+    addItem({
+      mgmtNum: mgmtNum,
+      productName: currentItem.productName,
+      maker: currentItem.maker,
+      modelNumber: currentItem.modelNumber,
+      category: currentItem.category,
+      channel: currentItem.channel,
+      channelNumber: currentItem.channelNumber,
+      estimatedPrice: currentItem.estimatedPrice,
+      startPrice: currentItem.startPrice,
+      condition: currentItem.condition,
+      conditionNote: currentItem.conditionNote,
+      estimatedSize: currentItem.estimatedSize,
+      shippingSize: currentItem.shippingSize,
+      needsApproval: currentItem.needsApproval,
+      approvalReason: currentItem.approvalReason,
+      score: currentItem.score,
+      location: loc,
+      listingTitle: currentItem.listingTitle,
+      listingDescription: currentItem.listingDescription,
+      staffName: currentUser.name,
+      status: '出品待ち',
+    });
+  }
 
   // Google Driveに写真アップロード（バックグラウンド）
   uploadToDrive(mgmtNum).then(result => {
@@ -1930,6 +2112,7 @@ function openItemDetail(mgmtNum) {
     deleteBtn.onclick = () => deleteItem(mgmtNum);
   }
 
+  resetPhotoAdd();
   document.getElementById('itemDetailOverlay').classList.add('open');
 }
 
@@ -1954,6 +2137,90 @@ function deleteItem(mgmtNum) {
   renderStockList();
   updateHomeStats();
   showToast(`${mgmtNum} を削除しました`);
+}
+
+// ====== 写真追加（既存商品） ======
+let addedPhotos = {};
+
+function resetPhotoAdd() {
+  addedPhotos = {};
+  for (let i = 1; i <= 5; i++) {
+    const preview = document.getElementById('photoAddPreview' + i);
+    const label = document.getElementById('photoAddLabel' + i);
+    if (preview) { preview.style.display = 'none'; preview.src = ''; }
+    if (label) label.style.display = '';
+  }
+  const btn = document.getElementById('photoAddBtn');
+  if (btn) btn.style.display = 'none';
+}
+
+function handlePhotoAdd(event, slot) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    compressImage(e.target.result, 1200, 0.8, function(compressed) {
+      addedPhotos[slot] = compressed;
+      const preview = document.getElementById('photoAddPreview' + slot);
+      const label = document.getElementById('photoAddLabel' + slot);
+      if (preview) { preview.src = compressed; preview.style.display = 'block'; }
+      if (label) label.style.display = 'none';
+      // アップロードボタン表示
+      const btn = document.getElementById('photoAddBtn');
+      if (btn) btn.style.display = '';
+    });
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+async function uploadAddedPhotos() {
+  if (!selectedItem) return;
+  const mgmtNum = selectedItem.mgmtNum;
+  const images = [];
+
+  Object.keys(addedPhotos).sort().forEach((slot, idx) => {
+    images.push({
+      data: addedPhotos[slot],
+      name: String(idx + 1).padStart(2, '0') + '_追加.jpg',
+      mimeType: 'image/jpeg',
+    });
+  });
+
+  if (images.length === 0) { showToast('写真を選択してください'); return; }
+
+  document.getElementById('photoAddLoading').style.display = '';
+  document.getElementById('photoAddBtn').style.display = 'none';
+
+  try {
+    const response = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/takeback-drive', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': CONFIG.SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        managementNumber: mgmtNum,
+        images: images,
+      }),
+    });
+    const result = await response.json();
+    document.getElementById('photoAddLoading').style.display = 'none';
+
+    if (result.success || result.folderUrl) {
+      showToast(`📷 ${images.length}枚をDriveにアップロードしました`);
+      resetPhotoAdd();
+    } else {
+      showToast('アップロードに失敗しました');
+      document.getElementById('photoAddBtn').style.display = '';
+    }
+  } catch (err) {
+    console.error('Photo add upload error:', err);
+    document.getElementById('photoAddLoading').style.display = 'none';
+    document.getElementById('photoAddBtn').style.display = '';
+    showToast('アップロードに失敗しました');
+  }
 }
 
 function scanTrackingLabel() {
@@ -2522,10 +2789,11 @@ function openAttendanceConsult() {
   if (!msg) return;
 
   sendToGAS({
-    action: 'chat_message',
-    from: currentUser.name,
-    to: '浅野儀頼',
+    action: 'soudan',
+    staff: currentUser.name,
+    itemName: '',
     message: `【勤怠連絡】${msg}`,
+    reason: '勤怠連絡',
     timestamp: formatTimestamp(),
   });
   showToast('💬 浅野さんに送信しました');
@@ -2533,10 +2801,11 @@ function openAttendanceConsult() {
 
 function requestAttendanceCorrection() {
   sendToGAS({
-    action: 'chat_message',
-    from: currentUser.name,
-    to: '浅野儀頼',
-    message: `出退勤の修正を依頼します。本日の記録を確認してください。`,
+    action: 'soudan',
+    staff: currentUser.name,
+    itemName: '',
+    message: '出退勤の修正を依頼します。本日の記録を確認してください。',
+    reason: '修正依頼',
     timestamp: formatTimestamp(),
   });
   showToast('📝 浅野さんに修正依頼を送信しました');
@@ -2909,10 +3178,12 @@ function approveItem() {
   }
 
   sendToGAS({
-    action: 'approval',
-    kanri_bango: selectedItem.mgmtNum,
+    action: 'approval_result',
+    mgmtNum: selectedItem.mgmtNum,
+    itemName: selectedItem.productName || '',
+    staff: selectedItem.staff || '',
     result: '承認',
-    approved_by: currentUser.name,
+    comment: '',
     timestamp: formatTimestamp(),
   });
 
@@ -2938,11 +3209,12 @@ function rejectItem() {
   }
 
   sendToGAS({
-    action: 'approval',
-    kanri_bango: selectedItem.mgmtNum,
+    action: 'approval_result',
+    mgmtNum: selectedItem.mgmtNum,
+    itemName: selectedItem.productName || '',
+    staff: selectedItem.staff || '',
     result: '差し戻し',
     comment: comment,
-    approved_by: currentUser.name,
     timestamp: formatTimestamp(),
   });
 
@@ -3072,6 +3344,7 @@ function deleteAvatarImage() {
   localStorage.removeItem('f8_avatar');
   document.getElementById('avatarImg').style.display = 'none';
   document.getElementById('avatarEmoji').style.display = 'block';
+  updateHeaderAvatar();
   showToast('写真を削除しました');
 }
 
@@ -3191,6 +3464,7 @@ function applyCrop() {
     document.getElementById('avatarImg').style.display = 'block';
     document.getElementById('avatarEmoji').style.display = 'none';
     localStorage.setItem('f8_avatar', result);
+    updateHeaderAvatar();
   } else {
     document.getElementById('mypageBg').style.backgroundImage = `url(${result})`;
     localStorage.setItem('f8_bg', result);
@@ -3204,6 +3478,20 @@ function cancelCrop() {
   _cropImg = null;
 }
 
+function updateHeaderAvatar() {
+  const avatar = localStorage.getItem('f8_avatar');
+  const img = document.getElementById('headerAvatarImg');
+  const fallback = document.getElementById('headerAvatarFallback');
+  if (img && avatar) {
+    img.src = avatar;
+    img.style.display = 'block';
+    if (fallback) fallback.style.display = 'none';
+  } else if (img) {
+    img.style.display = 'none';
+    if (fallback) fallback.style.display = '';
+  }
+}
+
 function loadProfileImages() {
   const avatar = localStorage.getItem('f8_avatar');
   if (avatar) {
@@ -3211,6 +3499,7 @@ function loadProfileImages() {
     document.getElementById('avatarImg').style.display = 'block';
     document.getElementById('avatarEmoji').style.display = 'none';
   }
+  updateHeaderAvatar();
   const bg = localStorage.getItem('f8_bg');
   if (bg) {
     document.getElementById('mypageBg').style.backgroundImage = `url(${bg})`;
@@ -3393,6 +3682,15 @@ function closeSalesModal() {
   document.getElementById('salesOverlay').style.display = 'none';
 }
 
+function openSalesManualDirect() {
+  document.getElementById('salesStep1').style.display = 'none';
+  document.getElementById('salesStep2').style.display = '';
+  document.getElementById('salesOverlay').style.display = 'flex';
+  ['salesPrice', 'salesFee', 'salesShipping'].forEach(id => {
+    document.getElementById(id).oninput = calcSalesProfit;
+  });
+}
+
 function openSalesManual() {
   document.getElementById('salesStep1').style.display = 'none';
   document.getElementById('salesStep2').style.display = '';
@@ -3492,6 +3790,123 @@ function submitSales() {
 
   showToast('売上を登録しました');
   closeSalesModal();
+}
+
+// ====== 取引ナビ ======
+async function handleTorihikiPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  document.getElementById('torihikiLoading').style.display = '';
+  document.getElementById('torihikiResult').style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const dataUrl = e.target.result;
+    try {
+      const response = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/takeback-judge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': CONFIG.SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          image: dataUrl,
+          step: 'receipt',
+          context: {
+            task: 'このヤフオク取引ナビのスクリーンショットから取引状態を読み取ってJSON形式で返してください: {"itemName":"商品名","status":"ステータス（落札済み/入金待ち/入金確認済み/梱包作業/発送済み/完了のいずれか）","buyer":"落札者ID","price":金額数値,"shipping":送料数値（わかれば）,"mgmtNum":"管理番号（タイトルにあれば）","statusDetail":"画面から読み取った状態の説明"}'
+          },
+        }),
+      });
+
+      const result = await response.json();
+      document.getElementById('torihikiLoading').style.display = 'none';
+
+      if (result.success && result.judgment) {
+        const j = result.judgment;
+        renderTorihikiResult(j);
+      } else {
+        showToast('読み取りに失敗しました');
+      }
+    } catch (err) {
+      document.getElementById('torihikiLoading').style.display = 'none';
+      showToast('読み取りに失敗しました');
+    }
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function renderTorihikiResult(data) {
+  const statusColors = {
+    '落札済み': 'background:rgba(197,162,88,0.2);color:#C5A258',
+    '入金待ち': 'background:rgba(255,59,48,0.2);color:#FF3B30',
+    '入金確認済み': 'background:rgba(0,107,63,0.2);color:#4CD964',
+    '梱包作業': 'background:rgba(0,122,255,0.2);color:#007AFF',
+    '発送済み': 'background:rgba(0,107,63,0.2);color:#4CD964',
+    '完了': 'background:rgba(142,142,147,0.2);color:#8E8E93',
+  };
+  const badgeStyle = statusColors[data.status] || 'background:rgba(142,142,147,0.2);color:#8E8E93';
+
+  const html = `
+    <div class="torihiki-result-card">
+      <div class="torihiki-result-row">
+        <span class="torihiki-result-label">商品名</span>
+        <span class="torihiki-result-value">${escapeHtml(data.itemName || '不明')}</span>
+      </div>
+      <div class="torihiki-result-row">
+        <span class="torihiki-result-label">ステータス</span>
+        <span class="torihiki-status-badge" style="${badgeStyle}">${escapeHtml(data.status || '不明')}</span>
+      </div>
+      ${data.mgmtNum ? `<div class="torihiki-result-row">
+        <span class="torihiki-result-label">管理番号</span>
+        <span class="torihiki-result-value">${escapeHtml(data.mgmtNum)}</span>
+      </div>` : ''}
+      ${data.price ? `<div class="torihiki-result-row">
+        <span class="torihiki-result-label">金額</span>
+        <span class="torihiki-result-value">¥${Number(data.price).toLocaleString()}</span>
+      </div>` : ''}
+      ${data.shipping ? `<div class="torihiki-result-row">
+        <span class="torihiki-result-label">送料</span>
+        <span class="torihiki-result-value">¥${Number(data.shipping).toLocaleString()}</span>
+      </div>` : ''}
+      ${data.buyer ? `<div class="torihiki-result-row">
+        <span class="torihiki-result-label">落札者</span>
+        <span class="torihiki-result-value">${escapeHtml(data.buyer)}</span>
+      </div>` : ''}
+      ${data.statusDetail ? `<div style="margin-top:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:8px; font-size:12px; color:var(--sub);">
+        💡 ${escapeHtml(data.statusDetail)}
+      </div>` : ''}
+      <div class="torihiki-btn-group">
+        <button class="btn btn-primary" style="flex:1;" onclick="confirmTorihikiUpdate(${JSON.stringify(data).replace(/"/g, '&quot;')})">✅ ステータス更新</button>
+        <button class="btn btn-outline" style="flex:1;" onclick="resetTorihiki()">📸 別の取引</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('torihikiResult').innerHTML = html;
+  document.getElementById('torihikiResult').style.display = '';
+}
+
+function confirmTorihikiUpdate(data) {
+  const payload = {
+    action: 'status_update',
+    mgmtNum: data.mgmtNum || '',
+    itemName: data.itemName || '',
+    status: data.status || '',
+    price: data.price || 0,
+    shipping: data.shipping || 0,
+    buyer: data.buyer || '',
+    staff: currentUser.name,
+    timestamp: formatTimestamp(),
+  };
+  sendToGAS(payload);
+  showToast(`📋 ${data.itemName || '商品'}を「${data.status}」に更新しました`);
+  resetTorihiki();
+}
+
+function resetTorihiki() {
+  document.getElementById('torihikiResult').style.display = 'none';
+  document.getElementById('torihikiResult').innerHTML = '';
 }
 
 // ====== 休み希望・連絡 ======
@@ -3718,12 +4133,7 @@ function renderLeaveHistory() {
   // 要約表示
   renderLeaveSummary();
 
-  // 管理者用
-  const adminSection = document.getElementById('leaveAdminSection');
-  if (adminSection && currentUser?.isAdmin) {
-    adminSection.style.display = '';
-    renderLeaveAdmin();
-  }
+  // 休み管理カレンダーは上位アプリへ移行済み
 }
 
 function setLeaveGroup(mode) {
