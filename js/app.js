@@ -3644,7 +3644,7 @@ function submitReceipt() {
     return;
   }
 
-  sendToGAS({
+  const expenseData = {
     action: 'keihi',
     jigyoubu: jigyoubu,
     date: date,
@@ -3654,7 +3654,15 @@ function submitReceipt() {
     memo: memo,
     staff_id: currentUser.name,
     timestamp: formatTimestamp(),
-  });
+  };
+  sendToGAS(expenseData);
+
+  // localStorageにも保存（エグゼクティブダッシュボード用）
+  try {
+    const expenses = JSON.parse(localStorage.getItem('f8_expenses') || '[]');
+    expenses.unshift(expenseData);
+    localStorage.setItem('f8_expenses', JSON.stringify(expenses));
+  } catch(e) {}
 
   showToast('🧾 経費精算を登録しました');
   closeReceiptModal();

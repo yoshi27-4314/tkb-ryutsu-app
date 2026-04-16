@@ -308,7 +308,10 @@ body {
   background: var(--surface); border: 1px solid var(--border);
   color: var(--text-sub); font-size: 11px; font-weight: 500;
   padding: 4px 12px; border-radius: 6px; cursor: pointer;
-  font-family: inherit;
+  font-family: inherit; transition: all 0.2s;
+}
+.collapsible-toggle.active {
+  background: var(--gold); color: #1a1a1a; border-color: var(--gold); font-weight: 700;
 }
 .collapsible-body { overflow: hidden; transition: max-height 0.3s ease; }
 .collapsible-body.collapsed { max-height: 0 !important; }
@@ -435,11 +438,11 @@ body {
     <div class="quick-btn" onclick="openProxyModal()">
       <div class="quick-icon">📞</div><div class="quick-label">代理連絡</div>
     </div>
-    <div class="quick-btn" onclick="switchTab('sales')">
+    <div class="quick-btn" onclick="switchTab('mgmt')">
       <div class="quick-icon">💰</div><div class="quick-label">売上確認</div>
     </div>
-    <div class="quick-btn" onclick="showToast('準備中です')">
-      <div class="quick-icon">📊</div><div class="quick-label">月次レポート</div>
+    <div class="quick-btn" onclick="switchTab('mgmt');setTimeout(()=>document.getElementById('staffPerfSection').scrollIntoView({behavior:'smooth'}),100)">
+      <div class="quick-icon">📊</div><div class="quick-label">スタッフ実績</div>
     </div>
     <div class="quick-btn" onclick="scrollToStaff()">
       <div class="quick-icon">👥</div><div class="quick-label">スタッフ状況</div>
@@ -474,21 +477,85 @@ body {
 
 </div><!-- /tab-home -->
 
-<!-- ===== TAB: SALES ===== -->
-<div class="tab-view" id="tab-sales">
+<!-- ===== TAB: MANAGEMENT ===== -->
+<div class="tab-view" id="tab-mgmt">
+
 <div class="greeting-section">
-  <div class="greeting-time">SALES OVERVIEW</div>
-  <div class="greeting-name" style="font-size:20px;">売上確認</div>
+  <div class="greeting-time">MANAGEMENT</div>
+  <div class="greeting-name" style="font-size:20px;">経営管理</div>
   <div class="gold-line"></div>
 </div>
+
+<!-- 期間切替 -->
 <div class="section">
-  <div class="section-title">📊 今月の売上</div>
-  <div class="kpi-grid" id="salesKpiGrid"></div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;" id="mgmtPeriodBtns">
+    <button class="collapsible-toggle active" onclick="setMgmtPeriod('today')">今日</button>
+    <button class="collapsible-toggle" onclick="setMgmtPeriod('yesterday')">昨日</button>
+    <button class="collapsible-toggle" onclick="setMgmtPeriod('week')">今週</button>
+    <button class="collapsible-toggle" onclick="setMgmtPeriod('month')">今月</button>
+    <button class="collapsible-toggle" onclick="setMgmtPeriod('lastmonth')">先月</button>
+  </div>
 </div>
+
+<!-- 損益サマリー -->
 <div class="section">
-  <div class="section-title">📋 直近の売上</div>
-  <div id="salesList"></div>
+  <div class="section-title">💰 損益サマリー</div>
+  <div class="kpi-grid" id="plGrid"></div>
+  <!-- キャッシュフローバー -->
+  <div style="margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-size:12px;color:var(--text-sub);">キャッシュフロー</span>
+      <span style="font-size:14px;font-weight:700;" id="cfValue">--</span>
+    </div>
+    <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;">
+      <div id="cfBar" style="height:100%;border-radius:4px;width:50%;transition:width 0.3s;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text-dim);">
+      <span>売上 <span id="cfSales">--</span></span>
+      <span>経費 <span id="cfExpense">--</span></span>
+    </div>
+  </div>
 </div>
+
+<!-- 事業部別売上 -->
+<div class="section">
+  <div class="collapsible-header" onclick="toggleEl('bizSalesBody','bizSalesBtn')">
+    <div class="section-title" style="margin-bottom:0;">🏢 事業部別売上</div>
+    <button class="collapsible-toggle" id="bizSalesBtn">開く</button>
+  </div>
+  <div class="collapsible-body collapsed" id="bizSalesBody" style="max-height:600px;">
+    <div style="padding-top:12px;" id="bizSalesList"></div>
+  </div>
+</div>
+
+<!-- 経費一覧 -->
+<div class="section">
+  <div class="collapsible-header" onclick="toggleEl('expenseBody','expenseBtn')">
+    <div class="section-title" style="margin-bottom:0;">🧾 経費</div>
+    <button class="collapsible-toggle" id="expenseBtn">開く</button>
+  </div>
+  <div class="collapsible-body collapsed" id="expenseBody" style="max-height:600px;">
+    <div style="padding-top:12px;" id="expenseList"></div>
+  </div>
+</div>
+
+<!-- 売上一覧 -->
+<div class="section">
+  <div class="collapsible-header" onclick="toggleEl('salesBody','salesBtn')">
+    <div class="section-title" style="margin-bottom:0;">📋 売上明細</div>
+    <button class="collapsible-toggle" id="salesBtn">開く</button>
+  </div>
+  <div class="collapsible-body collapsed" id="salesBody" style="max-height:1200px;">
+    <div style="padding-top:12px;" id="salesList"></div>
+  </div>
+</div>
+
+<!-- スタッフ実績 -->
+<div class="section" id="staffPerfSection">
+  <div class="section-title">👤 スタッフ実績</div>
+  <div id="staffPerfList"></div>
+</div>
+
 </div>
 
 <!-- ===== TAB: APPROVAL ===== -->
@@ -581,7 +648,7 @@ body {
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
   <div class="nav-item active" onclick="switchTab('home')"><span class="nav-icon">🏠</span>ホーム</div>
-  <div class="nav-item" onclick="switchTab('sales')"><span class="nav-icon">💰</span>売上</div>
+  <div class="nav-item" onclick="switchTab('mgmt')"><span class="nav-icon">📊</span>経営</div>
   <div class="nav-item" onclick="switchTab('approval')"><span class="nav-icon">✅</span>承認</div>
   <div class="nav-item" onclick="showToast('準備中です')"><span class="nav-icon">💬</span>AI</div>
   <div class="nav-item" onclick="showToast('準備中です')"><span class="nav-icon">⚙️</span>設定</div>
@@ -619,11 +686,11 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.querySelectorAll('.nav-item').forEach((n, i) => {
-    n.classList.toggle('active', ['home','sales','approval','ai','settings'][i] === tab);
+    n.classList.toggle('active', ['home','mgmt','approval','ai','settings'][i] === tab);
   });
   window.scrollTo(0, 0);
   if (tab === 'approval') renderApprovalsFull();
-  if (tab === 'sales') renderSalesTab();
+  if (tab === 'mgmt') renderMgmtTab();
 }
 
 // ===== GREETING =====
@@ -951,36 +1018,206 @@ function saveMemo() {
   addTimelineEvent(`メモ: ${text.slice(0, 30)}${text.length > 30 ? '...' : ''}`, staff ? `${staff}関連` : '', 'dot-blue');
 }
 
-// ===== SALES TAB =====
-function renderSalesTab() {
-  const sales = getSalesData();
-  const kpi = calcSalesKPI();
+// ===== MANAGEMENT TAB =====
+let mgmtPeriod = 'today';
 
-  document.getElementById('salesKpiGrid').innerHTML = `
-    <div class="kpi-card"><div class="kpi-value">${formatYen(kpi.thisSales)}</div><div class="kpi-label">今月売上</div></div>
-    <div class="kpi-card"><div class="kpi-value">${formatYen(kpi.thisProfit)}</div><div class="kpi-label">今月粗利</div></div>
-    <div class="kpi-card"><div class="kpi-value">${kpi.thisCount}件</div><div class="kpi-label">販売件数</div></div>
-    <div class="kpi-card"><div class="kpi-value">${kpi.thisCount > 0 ? formatYen(Math.round(kpi.thisSales / kpi.thisCount)) : '--'}</div><div class="kpi-label">平均単価</div></div>
+function getExpenses() {
+  try { return JSON.parse(localStorage.getItem('f8_expenses') || '[]'); }
+  catch { return []; }
+}
+
+function getDateRange(period) {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  const dow = now.getDay();
+  let start, end;
+  switch (period) {
+    case 'today':
+      start = new Date(y, m, d); end = new Date(y, m, d, 23, 59, 59); break;
+    case 'yesterday':
+      start = new Date(y, m, d - 1); end = new Date(y, m, d - 1, 23, 59, 59); break;
+    case 'week':
+      const monday = d - (dow === 0 ? 6 : dow - 1);
+      start = new Date(y, m, monday); end = new Date(y, m, d, 23, 59, 59); break;
+    case 'month':
+      start = new Date(y, m, 1); end = new Date(y, m, d, 23, 59, 59); break;
+    case 'lastmonth':
+      start = new Date(y, m - 1, 1); end = new Date(y, m, 0, 23, 59, 59); break;
+  }
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+    label: { today:'今日', yesterday:'昨日', week:'今週', month:'今月', lastmonth:'先月' }[period]
+  };
+}
+
+function setMgmtPeriod(p) {
+  mgmtPeriod = p;
+  document.querySelectorAll('#mgmtPeriodBtns .collapsible-toggle').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderMgmtTab();
+}
+
+function filterByPeriod(arr, dateField) {
+  const range = getDateRange(mgmtPeriod);
+  return arr.filter(item => {
+    const d = (item[dateField] || '').slice(0, 10);
+    return d >= range.start && d <= range.end;
+  });
+}
+
+function renderMgmtTab() {
+  const range = getDateRange(mgmtPeriod);
+  const allSales = getSalesData();
+  const allExpenses = getExpenses();
+  const sales = filterByPeriod(allSales, 'timestamp');
+  const expenses = filterByPeriod(allExpenses, 'date');
+
+  // 損益サマリー
+  let totalSales = 0, totalProfit = 0;
+  sales.forEach(s => {
+    const price = Number(s.price) || 0;
+    const fee = Number(s.fee) || 0;
+    const shipping = Number(s.shipping) || 0;
+    totalSales += price;
+    totalProfit += (price - fee - shipping);
+  });
+  let totalExpense = 0;
+  expenses.forEach(e => { totalExpense += Number(e.amount) || 0; });
+  const cashflow = totalSales - totalExpense;
+
+  document.getElementById('plGrid').innerHTML = `
+    <div class="kpi-card"><div class="kpi-value">${formatYen(totalSales)}</div><div class="kpi-label">売上</div></div>
+    <div class="kpi-card"><div class="kpi-value">${formatYen(totalProfit)}</div><div class="kpi-label">粗利</div></div>
+    <div class="kpi-card"><div class="kpi-value">${formatYen(totalExpense)}</div><div class="kpi-label">経費</div></div>
+    <div class="kpi-card"><div class="kpi-value">${sales.length}件</div><div class="kpi-label">販売件数</div></div>
   `;
 
-  const recent = sales.slice(0, 20);
-  if (recent.length === 0) {
-    document.getElementById('salesList').innerHTML = '<div class="empty-state"><div class="empty-icon">💰</div>売上データはまだありません</div>';
-    return;
+  // キャッシュフロー
+  const cfEl = document.getElementById('cfValue');
+  cfEl.textContent = formatYen(cashflow);
+  cfEl.style.color = cashflow >= 0 ? 'var(--gold)' : 'var(--danger)';
+  document.getElementById('cfSales').textContent = formatYen(totalSales);
+  document.getElementById('cfExpense').textContent = formatYen(totalExpense);
+  const cfBar = document.getElementById('cfBar');
+  if (totalSales + totalExpense > 0) {
+    const pct = Math.round(totalSales / (totalSales + totalExpense) * 100);
+    cfBar.style.width = pct + '%';
+    cfBar.style.background = cashflow >= 0 ? 'var(--gold)' : 'var(--danger)';
+  } else {
+    cfBar.style.width = '50%';
+    cfBar.style.background = 'var(--border)';
   }
-  document.getElementById('salesList').innerHTML = recent.map(s => {
-    const profit = (Number(s.price)||0) - (Number(s.fee)||0) - (Number(s.shipping)||0);
-    return `<div class="staff-row" style="margin-bottom:6px;">
-      <div class="staff-info">
-        <div class="staff-name">${s.itemName || '商品'}</div>
-        <div class="staff-detail">${s.mgmtNum || ''} ・ ${s.channel || ''} ・ ${s.staff || ''} ・ ${(s.timestamp || s.createdAt || '').slice(0,10)}</div>
+
+  // 事業部別売上
+  const byBiz = {};
+  sales.forEach(s => {
+    const biz = s.jigyoubu || 'テイクバック流通';
+    if (!byBiz[biz]) byBiz[biz] = { sales: 0, count: 0 };
+    byBiz[biz].sales += Number(s.price) || 0;
+    byBiz[biz].count++;
+  });
+  const bizHtml = Object.entries(byBiz).map(([name, data]) =>
+    `<div class="staff-row" style="margin-bottom:6px;">
+      <div class="staff-info"><div class="staff-name">${name}</div><div class="staff-detail">${data.count}件</div></div>
+      <div style="font-size:15px;font-weight:700;color:var(--gold);">${formatYen(data.sales)}</div>
+    </div>`
+  ).join('');
+  document.getElementById('bizSalesList').innerHTML = bizHtml || '<div class="empty-state">データなし</div>';
+
+  // 経費一覧
+  if (expenses.length === 0) {
+    document.getElementById('expenseList').innerHTML = '<div class="empty-state"><div class="empty-icon">🧾</div>経費データなし</div>';
+  } else {
+    document.getElementById('expenseList').innerHTML = expenses.map(e =>
+      `<div class="staff-row" style="margin-bottom:6px;">
+        <div class="staff-info">
+          <div class="staff-name">${e.shop_name || e.category || '経費'}</div>
+          <div class="staff-detail">${e.jigyoubu || ''} ・ ${e.category || ''} ・ ${e.staff_id || ''} ・ ${(e.date || '').slice(0,10)}</div>
+        </div>
+        <div style="font-size:14px;font-weight:700;color:var(--danger);">-¥${(Number(e.amount)||0).toLocaleString()}</div>
+      </div>`
+    ).join('');
+  }
+
+  // 売上明細
+  if (sales.length === 0) {
+    document.getElementById('salesList').innerHTML = '<div class="empty-state"><div class="empty-icon">💰</div>売上データなし</div>';
+  } else {
+    document.getElementById('salesList').innerHTML = sales.map(s => {
+      const profit = (Number(s.price)||0) - (Number(s.fee)||0) - (Number(s.shipping)||0);
+      return `<div class="staff-row" style="margin-bottom:6px;">
+        <div class="staff-info">
+          <div class="staff-name">${s.itemName || '商品'}</div>
+          <div class="staff-detail">${s.mgmtNum || ''} ・ ${s.channel || ''} ・ ${s.staff || ''} ・ ${(s.timestamp || '').slice(0,10)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:14px;font-weight:700;color:var(--gold);">¥${(Number(s.price)||0).toLocaleString()}</div>
+          <div style="font-size:11px;color:${profit>=0?'var(--success)':'var(--danger)'};">粗利 ¥${profit.toLocaleString()}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // スタッフ実績
+  renderStaffPerformance(range);
+}
+
+function renderStaffPerformance(range) {
+  const items = getItems();
+  const el = document.getElementById('staffPerfList');
+
+  const perfData = STAFF.map(s => {
+    const myItems = items.filter(i => i.staff === s.name);
+    const periodItems = myItems.filter(i => {
+      const d = (i.createdAt || '').slice(0, 10);
+      return d >= range.start && d <= range.end;
+    });
+    const bunka = periodItems.length;
+    const satsuei = periodItems.filter(i => i.photo1).length;
+    const shuppin = periodItems.filter(i => i.listingTitle).length;
+    const konpo = periodItems.filter(i => i.shipped).length;
+
+    // 売上
+    const sales = getSalesData().filter(sale => {
+      const d = (sale.timestamp || '').slice(0, 10);
+      return sale.staff === s.name && d >= range.start && d <= range.end;
+    });
+    const salesTotal = sales.reduce((sum, sale) => sum + (Number(sale.price) || 0), 0);
+
+    return { name: s.name, company: s.company, bunka, satsuei, shuppin, konpo, salesTotal, salesCount: sales.length };
+  });
+
+  // アクティブなスタッフのみ表示（何か実績があるもの）
+  const active = perfData.filter(p => p.bunka + p.satsuei + p.shuppin + p.konpo + p.salesCount > 0);
+  // 実績なしも含めて全員表示、ただし実績ありを上に
+  const sorted = [...active, ...perfData.filter(p => !active.includes(p))];
+
+  el.innerHTML = sorted.map(p => {
+    const hasData = p.bunka + p.satsuei + p.shuppin + p.konpo + p.salesCount > 0;
+    const company = p.company ? ` (${p.company})` : '';
+    return `<div class="staff-row" style="margin-bottom:8px;flex-wrap:wrap;">
+      <div class="staff-avatar ${hasData ? 'avatar-working' : 'avatar-off'}">${p.name.slice(-2)}</div>
+      <div class="staff-info" style="min-width:100px;">
+        <div class="staff-name">${p.name}${company}</div>
+        ${p.salesTotal > 0 ? `<div class="staff-detail">売上 ${formatYen(p.salesTotal)}（${p.salesCount}件）</div>` : ''}
       </div>
-      <div style="text-align:right;">
-        <div style="font-size:14px;font-weight:700;color:var(--gold);">¥${(Number(s.price)||0).toLocaleString()}</div>
-        <div style="font-size:11px;color:${profit>=0?'var(--success)':'var(--danger)'};">粗利 ¥${profit.toLocaleString()}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+        ${p.bunka ? `<span style="font-size:10px;padding:2px 8px;border-radius:4px;background:var(--gold-dim);color:var(--gold);">分荷 ${p.bunka}</span>` : ''}
+        ${p.satsuei ? `<span style="font-size:10px;padding:2px 8px;border-radius:4px;background:var(--blue-dim);color:var(--blue);">撮影 ${p.satsuei}</span>` : ''}
+        ${p.shuppin ? `<span style="font-size:10px;padding:2px 8px;border-radius:4px;background:var(--success-dim);color:var(--success);">出品 ${p.shuppin}</span>` : ''}
+        ${p.konpo ? `<span style="font-size:10px;padding:2px 8px;border-radius:4px;background:var(--pink-dim);color:var(--pink);">梱包 ${p.konpo}</span>` : ''}
+        ${!hasData ? '<span style="font-size:11px;color:var(--text-dim);">実績なし</span>' : ''}
       </div>
     </div>`;
   }).join('');
+}
+
+function toggleEl(bodyId, btnId) {
+  const body = document.getElementById(bodyId);
+  const btn = document.getElementById(btnId);
+  body.classList.toggle('collapsed');
+  btn.textContent = body.classList.contains('collapsed') ? '開く' : '閉じる';
 }
 
 // ===== TIMELINE =====
