@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FIRST EIGHT - Executive Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0D0D0D;
+  --surface: #1A1A1A;
+  --surface2: #222222;
+  --border: #333333;
+  --gold: #C5A258;
+  --gold-dim: rgba(197,162,88,0.15);
+  --white: #FFFFFF;
+  --text: #E0E0E0;
+  --text-sub: #888888;
+  --text-dim: #555555;
+  --danger: #CE2029;
+  --danger-dim: rgba(206,32,41,0.15);
+  --success: #2D7A3E;
+  --success-dim: rgba(45,122,62,0.15);
+  --blue: #2E8BC0;
+  --blue-dim: rgba(46,139,192,0.15);
+  --yellow: #FDD100;
+  --yellow-dim: rgba(253,209,0,0.1);
+  --pink: #E87CA0;
+  --pink-dim: rgba(232,124,160,0.1);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  padding-bottom: 80px;
+}
+
+/* ===== HEADER ===== */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-logo {
+  width: 38px; height: 38px; border-radius: 10px;
+  border: 2px solid var(--gold); color: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; letter-spacing: -0.5px;
+}
+.header-title { font-size: 16px; font-weight: 700; color: var(--gold); letter-spacing: 2px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.header-icon { font-size: 20px; cursor: pointer; position: relative; }
+.notif-badge {
+  position: absolute; top: -6px; right: -8px;
+  background: var(--danger); color: #fff; font-size: 9px; font-weight: 700;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ===== GREETING ===== */
+.greeting-section { padding: 20px 16px 0; }
+.greeting-time { font-size: 12px; color: var(--text-sub); letter-spacing: 2px; font-weight: 500; }
+.greeting-name { font-size: 24px; font-weight: 700; color: var(--white); margin-top: 4px; }
+.greeting-date { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
+.gold-line { width: 40px; height: 2px; background: var(--gold); margin: 16px 0; }
+
+/* ===== SECTION ===== */
+.section { padding: 0 16px 20px; }
+.section-title {
+  font-size: 12px; font-weight: 700; color: var(--gold);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+
+/* ===== ALERT BANNER ===== */
+.alert-banner {
+  margin: 12px 16px; padding: 12px 16px;
+  background: var(--danger-dim);
+  border: 1px solid rgba(206,32,41,0.3);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: #ff8a8a;
+  cursor: pointer;
+}
+.alert-banner:empty { display: none; }
+.alert-pulse {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--danger);
+  animation: pulse 1.5s infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ===== KPI GRID ===== */
+.kpi-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px; text-align: center;
+}
+.kpi-value { font-size: 24px; font-weight: 700; color: var(--gold); }
+.kpi-label { font-size: 11px; color: var(--text-sub); margin-top: 4px; }
+.kpi-change { font-size: 11px; margin-top: 6px; font-weight: 500; }
+.kpi-up { color: var(--gold); }
+.kpi-down { color: var(--danger); }
+.kpi-flat { color: var(--text-dim); }
+
+/* ===== BUSINESS UNIT CARDS ===== */
+.biz-list { display: flex; flex-direction: column; gap: 10px; }
+.biz-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.1s;
+}
+.biz-card:active { transform: scale(0.98); }
+.biz-card:hover { border-color: var(--gold); }
+.biz-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.bi-takeback { background: var(--gold-dim); border: 1px solid var(--gold); }
+.bi-saisei { background: rgba(28,37,65,0.3); border: 1px solid #4a5a7c; }
+.bi-clear { background: var(--yellow-dim); border: 1px solid var(--yellow); }
+.bi-aix { background: var(--pink-dim); border: 1px solid var(--pink); }
+.bi-askara { background: var(--blue-dim); border: 1px solid var(--blue); }
+.biz-info { flex: 1; min-width: 0; }
+.biz-name { font-size: 15px; font-weight: 700; color: var(--white); }
+.biz-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+.biz-right { text-align: right; flex-shrink: 0; }
+.biz-amount { font-size: 16px; font-weight: 700; color: var(--gold); }
+.biz-status { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
+.biz-arrow { color: var(--text-dim); font-size: 14px; margin-left: 4px; }
+
+/* ===== APPROVAL LIST ===== */
+.approval-list { display: flex; flex-direction: column; gap: 8px; }
+.approval-card {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  border-left: 3px solid var(--danger);
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer;
+}
+.approval-card:active { opacity: 0.8; }
+.approval-badge {
+  font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 6px;
+  white-space: nowrap;
+}
+.badge-urgent { background: var(--danger-dim); color: #ff6b6b; }
+.badge-normal { background: var(--gold-dim); color: var(--gold); }
+.badge-info { background: var(--blue-dim); color: var(--blue); }
+.approval-content { flex: 1; min-width: 0; }
+.approval-title { font-size: 13px; color: var(--text); }
+.approval-meta { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+.approval-action { color: var(--gold); font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+/* ===== TIMELINE ===== */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.timeline-item {
+  display: flex; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid rgba(51,51,51,0.5);
+}
+.timeline-item:last-child { border-bottom: none; }
+.timeline-time { font-size: 11px; color: var(--text-dim); width: 40px; flex-shrink: 0; padding-top: 2px; }
+.timeline-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--gold); margin-top: 5px; flex-shrink: 0;
+}
+.timeline-dot.dot-blue { background: var(--blue); }
+.timeline-dot.dot-green { background: var(--success); }
+.timeline-dot.dot-red { background: var(--danger); }
+.timeline-dot.dot-yellow { background: var(--yellow); }
+.timeline-content { flex: 1; }
+.timeline-text { font-size: 13px; color: var(--text); }
+.timeline-source { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+
+/* ===== QUICK ACTIONS ===== */
+.quick-actions {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+}
+.quick-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 8px; text-align: center;
+  cursor: pointer; transition: border-color 0.2s;
+}
+.quick-btn:hover { border-color: var(--gold); }
+.quick-btn:active { transform: scale(0.96); }
+.quick-icon { font-size: 24px; margin-bottom: 6px; }
+.quick-label { font-size: 11px; color: var(--text-sub); font-weight: 500; }
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  display: flex; padding: 8px 0 max(16px, env(safe-area-inset-bottom));
+  z-index: 100;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 2px; font-size: 10px; color: var(--text-dim);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.nav-item.active { color: var(--gold); }
+.nav-icon { font-size: 20px; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center; padding: 24px;
+  color: var(--text-dim); font-size: 13px;
+}
+.empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+/* ===== PC RESPONSIVE ===== */
+@media (min-width: 768px) {
+  body { max-width: 480px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+  .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); }
+  .kpi-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
+}
+@media (min-width: 1200px) {
+  body { max-width: 100%; border: none; }
+  .bottom-nav { display: none; }
+  .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 0; max-width: 1200px; margin: 0 auto; }
+  .main-content > .section { padding: 0 20px 20px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
+}
+
+/* ===== SCROLL ===== */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">F8</div>
+    <span class="header-title">FIRST EIGHT</span>
+  </div>
+  <div class="header-right">
+    <span class="header-icon">
+      🔔
+      <span class="notif-badge" id="notifCount">3</span>
+    </span>
+    <span class="header-icon">⚙️</span>
+  </div>
+</div>
+
+<!-- ALERT BANNER（異常時のみ表示） -->
+<div class="alert-banner" id="alertBanner">
+  <span class="alert-pulse"></span>
+  <span>承認待ちが3件あります — タップして確認</span>
+</div>
+
+<!-- GREETING -->
+<div class="greeting-section">
+  <div class="greeting-time" id="greetingTime">GOOD MORNING</div>
+  <div class="greeting-name">浅野 儀頼</div>
+  <div class="greeting-date" id="greetingDate"></div>
+  <div class="gold-line"></div>
+</div>
+
+<div class="main-content">
+
+<!-- KPI OVERVIEW -->
+<div class="section">
+  <div class="section-title">📊 Monthly Overview</div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value">¥4.2M</div>
+      <div class="kpi-label">売上合計</div>
+      <div class="kpi-change kpi-up">↑ +12%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">¥1.8M</div>
+      <div class="kpi-label">粗利合計</div>
+      <div class="kpi-change kpi-up">↑ +8%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">348</div>
+      <div class="kpi-label">処理件数</div>
+      <div class="kpi-change kpi-up">↑ +15%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">92%</div>
+      <div class="kpi-label">稼働率</div>
+      <div class="kpi-change kpi-flat">— 横ばい</div>
+    </div>
+  </div>
+</div>
+
+<!-- BUSINESS UNITS -->
+<div class="section">
+  <div class="section-title">🏢 事業部</div>
+  <div class="biz-list">
+    <div class="biz-card" onclick="openApp('takeback')">
+      <div class="biz-icon bi-takeback">📦</div>
+      <div class="biz-info">
+        <div class="biz-name">テイクバック 流通</div>
+        <div class="biz-meta">スタッフ8名 ・ 在庫 234点</div>
+      </div>
+      <div class="biz-right">
+        <div class="biz-amount">¥1.2M</div>
+        <div class="biz-status">前月比 +15%</div>
+      </div>
+      <span class="biz-arrow">›</span>
+    </div>
+    <div class="biz-card" onclick="openApp('saisei')">
+      <div class="biz-icon bi-saisei">🔨</div>
+      <div class="biz-info">
+        <div class="biz-name">テイクバック 再生</div>
+        <div class="biz-meta">案件 3件 ・ 作業中 1件</div>
+      </div>
+      <div class="biz-right">
+        <div class="biz-amount">¥0.8M</div>
+        <div class="biz-status">見積2件</div>
+      </div>
+      <span class="biz-arrow">›</span>
+    </div>
+    <div class="biz-card" onclick="openApp('clearmainte')">
+      <div class="biz-icon bi-clear">🏗️</div>
+      <div class="biz-info">
+        <div class="biz-name">クリアメンテ</div>
+        <div class="biz-meta">施工中 5件 ・ 見積中 3件</div>
+      </div>
+      <div class="biz-right">
+        <div class="biz-amount">¥2.1M</div>
+        <div class="biz-status">請求待ち 2件</div>
+      </div>
+      <span class="biz-arrow">›</span>
+    </div>
+    <div class="biz-card" onclick="openApp('aix')">
+      <div class="biz-icon bi-aix">🤖</div>
+      <div class="biz-info">
+        <div class="biz-name">AIX事業部</div>
+        <div class="biz-meta">受託開発 ・ 2案件進行中</div>
+      </div>
+      <div class="biz-right">
+        <div class="biz-amount">¥0.9M</div>
+        <div class="biz-status">開発中</div>
+      </div>
+      <span class="biz-arrow">›</span>
+    </div>
+    <div class="biz-card" onclick="openApp('askara')">
+      <div class="biz-icon bi-askara">🚀</div>
+      <div class="biz-info">
+        <div class="biz-name">アスカラ</div>
+        <div class="biz-meta">リード獲得 ・ 営業支援</div>
+      </div>
+      <div class="biz-right">
+        <div class="biz-amount">—</div>
+        <div class="biz-status">準備中</div>
+      </div>
+      <span class="biz-arrow">›</span>
+    </div>
+  </div>
+</div>
+
+<!-- APPROVALS -->
+<div class="section">
+  <div class="section-title">🔴 承認待ち</div>
+  <div class="approval-list">
+    <div class="approval-card">
+      <span class="approval-badge badge-urgent">高額品</span>
+      <div class="approval-content">
+        <div class="approval-title">2604-0031 真鍮ランプ ¥45,000</div>
+        <div class="approval-meta">テイクバック流通 ・ 桃井さんから ・ 2時間前</div>
+      </div>
+      <span class="approval-action">確認 ›</span>
+    </div>
+    <div class="approval-card">
+      <span class="approval-badge badge-normal">相談</span>
+      <div class="approval-content">
+        <div class="approval-title">アンティーク判定について相談</div>
+        <div class="approval-meta">テイクバック流通 ・ 林さんから ・ 5時間前</div>
+      </div>
+      <span class="approval-action">確認 ›</span>
+    </div>
+    <div class="approval-card">
+      <span class="approval-badge badge-info">見積</span>
+      <div class="approval-content">
+        <div class="approval-title">岐阜市蔵前 片付け ¥185,000</div>
+        <div class="approval-meta">クリアメンテ ・ 提出済み ・ 返答待ち</div>
+      </div>
+      <span class="approval-action">確認 ›</span>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK ACTIONS -->
+<div class="section">
+  <div class="section-title">⚡ クイックアクション</div>
+  <div class="quick-actions">
+    <div class="quick-btn" onclick="openApp('takeback')">
+      <div class="quick-icon">📷</div>
+      <div class="quick-label">分荷判定</div>
+    </div>
+    <div class="quick-btn">
+      <div class="quick-icon">💰</div>
+      <div class="quick-label">売上確認</div>
+    </div>
+    <div class="quick-btn">
+      <div class="quick-icon">📊</div>
+      <div class="quick-label">月次レポート</div>
+    </div>
+    <div class="quick-btn">
+      <div class="quick-icon">👥</div>
+      <div class="quick-label">スタッフ状況</div>
+    </div>
+    <div class="quick-btn">
+      <div class="quick-icon">💬</div>
+      <div class="quick-label">AI相談</div>
+    </div>
+    <div class="quick-btn">
+      <div class="quick-icon">📋</div>
+      <div class="quick-label">経費精算</div>
+    </div>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div class="section">
+  <div class="section-title">🕐 今日のタイムライン</div>
+  <div class="timeline">
+    <div class="timeline-item">
+      <span class="timeline-time">9:02</span>
+      <span class="timeline-dot dot-green"></span>
+      <div class="timeline-content">
+        <div class="timeline-text">林さんが出勤しました</div>
+        <div class="timeline-source">テイクバック流通</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <span class="timeline-time">9:15</span>
+      <span class="timeline-dot"></span>
+      <div class="timeline-content">
+        <div class="timeline-text">分荷判定 3件完了（林さん）</div>
+        <div class="timeline-source">テイクバック流通</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <span class="timeline-time">9:30</span>
+      <span class="timeline-dot dot-red"></span>
+      <div class="timeline-content">
+        <div class="timeline-text">高額品承認リクエスト ¥45,000</div>
+        <div class="timeline-source">テイクバック流通 ・ 桃井さん</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <span class="timeline-time">10:00</span>
+      <span class="timeline-dot dot-green"></span>
+      <div class="timeline-content">
+        <div class="timeline-text">横山さん・奥村さんが出勤しました</div>
+        <div class="timeline-source">テイクバック流通</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <span class="timeline-time">10:20</span>
+      <span class="timeline-dot dot-yellow"></span>
+      <div class="timeline-content">
+        <div class="timeline-text">岐阜市蔵前 現場作業開始</div>
+        <div class="timeline-source">テイクバック再生</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <span class="timeline-time">11:00</span>
+      <span class="timeline-dot dot-blue"></span>
+      <div class="timeline-content">
+        <div class="timeline-text">eBay注文 1件（¥12,800）</div>
+        <div class="timeline-source">テイクバック流通</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main-content -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active">
+    <span class="nav-icon">🏠</span>ホーム
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">📊</span>経営
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">✅</span>承認
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">💬</span>AI
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">⚙️</span>設定
+  </div>
+</div>
+
+<script>
+// ===== 挨拶の時間帯切り替え =====
+function updateGreeting() {
+  const h = new Date().getHours();
+  const el = document.getElementById('greetingTime');
+  if (h < 12) el.textContent = 'GOOD MORNING';
+  else if (h < 17) el.textContent = 'GOOD AFTERNOON';
+  else el.textContent = 'GOOD EVENING';
+}
+
+// ===== 日付表示 =====
+function updateDate() {
+  const now = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  const el = document.getElementById('greetingDate');
+  el.textContent = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${days[now.getDay()]}）`;
+}
+
+// ===== 事業部アプリへの遷移 =====
+function openApp(appId) {
+  const apps = {
+    takeback: 'index.html',
+    saisei: null,    // 未実装
+    clearmainte: null, // 未実装
+    aix: null,       // 未実装
+    askara: null     // 未実装
+  };
+  const url = apps[appId];
+  if (url) {
+    window.location.href = url;
+  } else {
+    showToast('準備中です');
+  }
+}
+
+// ===== トースト通知 =====
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = `
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: #333; color: #fff; padding: 10px 24px; border-radius: 8px;
+      font-size: 13px; z-index: 999; opacity: 0; transition: opacity 0.3s;
+    `;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+
+// ===== ボトムナビ切り替え =====
+document.querySelectorAll('.nav-item').forEach((item, i) => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    // TODO: タブ切り替え実装
+    if (i > 0) showToast('準備中です');
+  });
+});
+
+// ===== アラートバナー =====
+document.getElementById('alertBanner').addEventListener('click', () => {
+  // 承認セクションまでスクロール
+  document.querySelector('.approval-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// ===== 初期化 =====
+updateGreeting();
+updateDate();
+</script>
+
+</body>
+</html>
