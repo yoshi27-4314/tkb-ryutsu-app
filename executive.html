@@ -466,7 +466,10 @@ body {
 <div class="section">
   <div class="collapsible-header" onclick="toggleStaff()">
     <div class="section-title" style="margin-bottom:0;">👥 スタッフ状況</div>
-    <button class="collapsible-toggle" id="staffToggleBtn">開く</button>
+    <div style="display:flex;gap:6px;">
+      <button class="collapsible-toggle" onclick="event.stopPropagation();openLeaveManage()">休み管理</button>
+      <button class="collapsible-toggle" id="staffToggleBtn">開く</button>
+    </div>
   </div>
   <div class="collapsible-body collapsed" id="staffBody" style="max-height:800px;">
     <div style="padding-top:12px;">
@@ -571,6 +574,59 @@ body {
 </div>
 
 <!-- ===== MODALS ===== -->
+
+<!-- 休み管理モーダル -->
+<div class="modal-overlay" id="leaveManageModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">休み連絡の管理</span>
+      <button class="modal-close" onclick="closeModal('leaveManageModal')">✕</button>
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">スタッフで絞り込み</div>
+      <select class="modal-select" id="leaveFilterStaff" onchange="renderLeaveList()">
+        <option value="">全員</option>
+      </select>
+    </div>
+    <div id="leaveManageList"></div>
+  </div>
+</div>
+
+<!-- 休み編集モーダル -->
+<div class="modal-overlay" id="leaveEditModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">休み連絡の編集</span>
+      <button class="modal-close" onclick="closeModal('leaveEditModal')">✕</button>
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">スタッフ</div>
+      <div class="approval-detail-value" id="leaveEditName"></div>
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">種別</div>
+      <select class="modal-select" id="leaveEditType" onchange="onLeaveEditTypeChange()">
+        <option value="欠勤">欠勤（終日休み）</option>
+        <option value="遅刻">遅刻</option>
+        <option value="早退">早退</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">日付</div>
+      <input type="date" class="modal-input" id="leaveEditDate">
+    </div>
+    <div class="modal-field" id="leaveEditTimeField" style="display:none;">
+      <div class="modal-label">時刻</div>
+      <input type="time" class="modal-input" id="leaveEditTime">
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">理由（任意）</div>
+      <textarea class="modal-textarea" id="leaveEditReason" placeholder="理由"></textarea>
+    </div>
+    <button class="modal-btn btn-gold" onclick="saveLeaveEdit()">保存する</button>
+    <button class="modal-btn btn-danger" style="margin-top:8px;" onclick="deleteLeave()">この連絡を削除する</button>
+  </div>
+</div>
 
 <!-- 承認詳細モーダル -->
 <div class="modal-overlay" id="approvalModal">
@@ -992,6 +1048,105 @@ function submitProxy() {
   showToast(`${staffName}さんの${type}を登録しました`);
   renderStaffStatus();
   addTimelineEvent(`${staffName}さんの${type}を代理登録`, 'テイクバック', 'dot-yellow');
+}
+
+// ===== LEAVE MANAGEMENT (休み管理) =====
+let editingLeaveIndex = -1;
+
+function openLeaveManage() {
+  const sel = document.getElementById('leaveFilterStaff');
+  sel.innerHTML = '<option value="">全員</option>' +
+    STAFF.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+  renderLeaveList();
+  openModal('leaveManageModal');
+}
+
+function renderLeaveList() {
+  const leaves = getLeaveRequests();
+  const filter = document.getElementById('leaveFilterStaff').value;
+  const el = document.getElementById('leaveManageList');
+
+  // フィルター＆新しい順にソート
+  let filtered = filter ? leaves.filter(l => l.staffName === filter) : [...leaves];
+  filtered.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  // 直近30件に制限
+  filtered = filtered.slice(0, 30);
+
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>休み連絡はありません</div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map((l, i) => {
+    const origIdx = leaves.indexOf(l);
+    const typeColor = l.type === '欠勤' ? 'badge-urgent' : 'badge-normal';
+    return `<div class="approval-card" style="border-left-color:var(--gold);margin-bottom:6px;cursor:pointer;" onclick="openLeaveEdit(${origIdx})">
+      <span class="approval-badge ${typeColor}">${l.type}</span>
+      <div class="approval-content">
+        <div class="approval-title">${l.staffName} — ${l.date}</div>
+        <div class="approval-meta">${l.time ? l.time + ' ・ ' : ''}${l.reason || ''} ${l.approved ? '✅承認済' : ''}</div>
+      </div>
+      <span class="approval-action">編集 ›</span>
+    </div>`;
+  }).join('');
+}
+
+function openLeaveEdit(idx) {
+  const leaves = getLeaveRequests();
+  const l = leaves[idx];
+  if (!l) return;
+  editingLeaveIndex = idx;
+
+  document.getElementById('leaveEditName').textContent = l.staffName;
+  document.getElementById('leaveEditType').value = l.type || '欠勤';
+  document.getElementById('leaveEditDate').value = l.date || '';
+  document.getElementById('leaveEditTime').value = l.time || '';
+  document.getElementById('leaveEditReason').value = l.reason || '';
+  onLeaveEditTypeChange();
+
+  closeModal('leaveManageModal');
+  openModal('leaveEditModal');
+}
+
+function onLeaveEditTypeChange() {
+  const type = document.getElementById('leaveEditType').value;
+  document.getElementById('leaveEditTimeField').style.display = type === '欠勤' ? 'none' : 'block';
+}
+
+function saveLeaveEdit() {
+  if (editingLeaveIndex < 0) return;
+  const leaves = getLeaveRequests();
+  const l = leaves[editingLeaveIndex];
+  if (!l) return;
+
+  l.type = document.getElementById('leaveEditType').value;
+  l.date = document.getElementById('leaveEditDate').value;
+  l.time = l.type !== '欠勤' ? document.getElementById('leaveEditTime').value : null;
+  l.reason = document.getElementById('leaveEditReason').value.trim();
+
+  localStorage.setItem('f8_leave_requests', JSON.stringify(leaves));
+
+  closeModal('leaveEditModal');
+  showToast('休み連絡を更新しました');
+  renderStaffStatus();
+  buildTimeline();
+  editingLeaveIndex = -1;
+}
+
+function deleteLeave() {
+  if (editingLeaveIndex < 0) return;
+  if (!confirm('この休み連絡を削除しますか？')) return;
+
+  const leaves = getLeaveRequests();
+  const deleted = leaves.splice(editingLeaveIndex, 1)[0];
+  localStorage.setItem('f8_leave_requests', JSON.stringify(leaves));
+
+  closeModal('leaveEditModal');
+  showToast(`${deleted.staffName}さんの${deleted.type}（${deleted.date}）を削除しました`);
+  renderStaffStatus();
+  buildTimeline();
+  editingLeaveIndex = -1;
 }
 
 // ===== MEMO =====
