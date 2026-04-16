@@ -299,6 +299,20 @@ body {
 .nav-item.active { color: var(--gold); }
 .nav-icon { font-size: 20px; }
 
+/* ===== COLLAPSIBLE ===== */
+.collapsible-header {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.collapsible-toggle {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-sub); font-size: 11px; font-weight: 500;
+  padding: 4px 12px; border-radius: 6px; cursor: pointer;
+  font-family: inherit;
+}
+.collapsible-body { overflow: hidden; transition: max-height 0.3s ease; }
+.collapsible-body.collapsed { max-height: 0 !important; }
+
 /* ===== EMPTY STATE ===== */
 .empty-state {
   text-align: center; padding: 24px; color: var(--text-dim); font-size: 13px;
@@ -377,12 +391,6 @@ body {
   </div>
 </div>
 
-<!-- STAFF STATUS -->
-<div class="section">
-  <div class="section-title">👥 スタッフ状況</div>
-  <div class="staff-grid" id="staffGrid"></div>
-</div>
-
 <!-- BUSINESS UNITS -->
 <div class="section">
   <div class="section-title">🏢 事業部</div>
@@ -449,6 +457,19 @@ body {
 <div class="section">
   <div class="section-title">🕐 今日のタイムライン</div>
   <div class="timeline" id="timeline"></div>
+</div>
+
+<!-- STAFF STATUS (折りたたみ) -->
+<div class="section">
+  <div class="collapsible-header" onclick="toggleStaff()">
+    <div class="section-title" style="margin-bottom:0;">👥 スタッフ状況</div>
+    <button class="collapsible-toggle" id="staffToggleBtn">開く</button>
+  </div>
+  <div class="collapsible-body collapsed" id="staffBody" style="max-height:800px;">
+    <div style="padding-top:12px;">
+      <div class="staff-grid" id="staffGrid"></div>
+    </div>
+  </div>
 </div>
 
 </div><!-- /tab-home -->
@@ -1043,7 +1064,17 @@ function openApp(appId) {
   if (url) window.location.href = url;
   else showToast('準備中です');
 }
-function scrollToStaff() { document.getElementById('staffGrid').scrollIntoView({ behavior: 'smooth' }); }
+function scrollToStaff() {
+  const body = document.getElementById('staffBody');
+  if (body.classList.contains('collapsed')) toggleStaff();
+  document.getElementById('staffBody').scrollIntoView({ behavior: 'smooth' });
+}
+function toggleStaff() {
+  const body = document.getElementById('staffBody');
+  const btn = document.getElementById('staffToggleBtn');
+  body.classList.toggle('collapsed');
+  btn.textContent = body.classList.contains('collapsed') ? '開く' : '閉じる';
+}
 
 // ===== TOAST =====
 function showToast(msg) {
