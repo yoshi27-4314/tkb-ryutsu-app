@@ -25,7 +25,7 @@
     <div class="login-form">
       <div class="form-group">
         <label>スタッフ名</label>
-        <select id="loginStaff">
+        <select id="loginStaff" onchange="onStaffSelect()">
           <option value="">選択してください</option>
           <option value="林和人">林和人</option>
           <option value="横山優">横山優</option>
@@ -38,9 +38,19 @@
           <option value="浅野儀頼">浅野儀頼（管理者）</option>
         </select>
       </div>
+      <div id="pinSection" class="form-group" style="display:none;">
+        <label>暗証番号（4桁）</label>
+        <div class="pin-input-row">
+          <input type="password" id="pinInput1" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]" onkeyup="pinNext(1)">
+          <input type="password" id="pinInput2" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]" onkeyup="pinNext(2)">
+          <input type="password" id="pinInput3" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]" onkeyup="pinNext(3)">
+          <input type="password" id="pinInput4" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]" onkeyup="pinNext(4)">
+        </div>
+        <p id="pinError" style="color:var(--danger); font-size:12px; margin-top:4px; display:none;">暗証番号が違います</p>
+      </div>
       <button class="btn btn-gold" onclick="doLogin()">ログイン</button>
     </div>
-    <p class="login-note">※ 本番ではGoogle認証 + PIN/生体認証になります</p>
+    <p class="login-note">※ 暗証番号はマイページから変更できます</p>
   </div>
 </div>
 
@@ -1226,6 +1236,7 @@
       </div>
 
       <div class="section">
+        <button class="btn btn-outline" onclick="changePin()" style="width:100%; margin-bottom:8px;">🔐 暗証番号を変更</button>
         <button class="btn btn-outline" onclick="doLogout()" style="width:100%">ログアウト</button>
       </div>
     </div>

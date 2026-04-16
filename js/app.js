@@ -338,10 +338,76 @@ function getItems() {
 }
 
 // ====== ログイン ======
+// ====== PIN認証 ======
+const PIN_KEY = 'f8_pins';
+
+function getStoredPins() {
+  return JSON.parse(localStorage.getItem(PIN_KEY) || '{}');
+}
+
+function onStaffSelect() {
+  const name = document.getElementById('loginStaff').value;
+  const pinSection = document.getElementById('pinSection');
+  const pinError = document.getElementById('pinError');
+  if (!name) {
+    pinSection.style.display = 'none';
+    return;
+  }
+  pinSection.style.display = '';
+  pinError.style.display = 'none';
+  // PIN入力をクリア
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('pinInput' + i).value = '';
+  }
+  document.getElementById('pinInput1').focus();
+}
+
+function pinNext(current) {
+  const input = document.getElementById('pinInput' + current);
+  if (input.value.length === 1 && current < 4) {
+    document.getElementById('pinInput' + (current + 1)).focus();
+  }
+  // 4桁揃ったら自動ログイン
+  if (current === 4 && input.value.length === 1) {
+    doLogin();
+  }
+}
+
+function getPinFromInputs() {
+  let pin = '';
+  for (let i = 1; i <= 4; i++) {
+    pin += document.getElementById('pinInput' + i).value;
+  }
+  return pin;
+}
+
 function doLogin() {
   const sel = document.getElementById('loginStaff');
   const name = sel.value;
   if (!name) { showToast('スタッフを選択してください'); return; }
+
+  const pin = getPinFromInputs();
+  if (pin.length !== 4) { showToast('4桁の暗証番号を入力してください'); return; }
+
+  const pins = getStoredPins();
+  if (pins[name]) {
+    // PINが登録済み → 照合
+    if (pins[name] !== pin) {
+      document.getElementById('pinError').style.display = '';
+      // PIN入力をクリア
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById('pinInput' + i).value = '';
+      }
+      document.getElementById('pinInput1').focus();
+      return;
+    }
+  } else {
+    // 初回ログイン → PINを登録
+    pins[name] = pin;
+    localStorage.setItem(PIN_KEY, JSON.stringify(pins));
+    showToast('🔐 暗証番号を登録しました。次回から同じ番号でログインしてください。');
+  }
+
   currentUser = { name: name, isAdmin: name === '浅野儀頼' };
   localStorage.setItem(LOGIN_KEY, JSON.stringify(currentUser));
   showMainScreen();
@@ -352,6 +418,29 @@ function doLogout() {
   localStorage.removeItem(LOGIN_KEY);
   document.getElementById('mainScreen').classList.remove('active');
   document.getElementById('loginScreen').classList.add('active');
+  // PIN入力をクリア
+  const pinSection = document.getElementById('pinSection');
+  if (pinSection) pinSection.style.display = 'none';
+  document.getElementById('loginStaff').value = '';
+}
+
+// PIN変更（マイページから）
+function changePin() {
+  const currentPin = prompt('現在の暗証番号を入力してください：');
+  if (currentPin === null) return;
+  const pins = getStoredPins();
+  if (pins[currentUser.name] && pins[currentUser.name] !== currentPin) {
+    showToast('暗証番号が違います');
+    return;
+  }
+  const newPin = prompt('新しい暗証番号（4桁）を入力してください：');
+  if (!newPin || newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+    showToast('4桁の数字を入力してください');
+    return;
+  }
+  pins[currentUser.name] = newPin;
+  localStorage.setItem(PIN_KEY, JSON.stringify(pins));
+  showToast('🔐 暗証番号を変更しました');
 }
 
 function showMainScreen() {

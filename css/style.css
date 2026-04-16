@@ -1285,6 +1285,17 @@ body[data-theme="female"] {
   height: 1px; background: #2A3553; margin: 4px 16px;
 }
 
+/* ====== PIN入力 ====== */
+.pin-input-row {
+  display: flex; gap: 12px; justify-content: center; margin-top: 8px;
+}
+.pin-box {
+  width: 48px; height: 56px; text-align: center; font-size: 24px; font-weight: 700;
+  background: var(--card); border: 2px solid rgba(197,162,88,0.3); border-radius: 10px;
+  color: var(--text); outline: none;
+}
+.pin-box:focus { border-color: var(--gold); }
+
 /* ====== 写真追加 ====== */
 .photo-add-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px;
