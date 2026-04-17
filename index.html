@@ -575,13 +575,13 @@
     <div id="tab-torihiki" class="tab-content">
       <div class="section">
         <h3 class="section-title">📋 取引ナビ</h3>
-        <p style="color:var(--sub); font-size:13px; margin-bottom:16px;">取引画面のスクリーンショットを撮ると、AIがステータスを自動更新します。</p>
+        <p style="color:var(--sub); font-size:13px; margin-bottom:16px;">取引画面のスクリーンショットを読み込むと、AIがステータスを自動更新します。</p>
         <div class="torihiki-upload-area" id="torihikiUploadArea" onclick="document.getElementById('torihikiPhotoInput').click()">
-          <div class="torihiki-upload-icon">📸</div>
-          <div class="torihiki-upload-text">取引ナビのスクショを撮影</div>
-          <div class="torihiki-upload-sub">タップしてカメラを起動</div>
+          <div class="torihiki-upload-icon">📋</div>
+          <div class="torihiki-upload-text">スクリーンショットを読み込む</div>
+          <div class="torihiki-upload-sub">画像を選択 / スマホならカメラも可</div>
         </div>
-        <input type="file" id="torihikiPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleTorihikiPhoto(event)">
+        <input type="file" id="torihikiPhotoInput" accept="image/*" style="display:none" onchange="handleTorihikiPhoto(event)">
         <div id="torihikiLoading" style="display:none; text-align:center; padding:24px;">
           <div class="loading-spinner"></div>
           <p style="margin-top:8px; color:var(--sub);">AIが読み取り中...</p>
@@ -594,7 +594,7 @@
         <h3 class="section-title">💰 売上登録</h3>
         <p style="color:var(--sub); font-size:13px; margin-bottom:16px;">落札一覧のスクショから一括登録、または手入力で登録できます。</p>
         <div class="torihiki-btn-group">
-          <button class="btn btn-primary" style="flex:1;" onclick="openSalesModal()">📸 スクショで登録</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="openSalesModal()">📋 スクショで登録</button>
           <button class="btn btn-outline" style="flex:1;" onclick="openSalesManualDirect()">✏️ 手入力</button>
         </div>
       </div>
