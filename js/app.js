@@ -1149,7 +1149,7 @@ function updateBottleneck(items) {
 function updateBottleneckUI(inv) {
   const satsueiWait = (inv['分荷確定'] || 0) + (inv['撮影待ち'] || 0);
   const shuppinWait = (inv['出品待ち'] || 0) + (inv['出品'] || 0);
-  const konpoWait = (inv['梱包作業'] || 0) + (inv['梱包待ち'] || 0) + (inv['入金確認済み'] || 0);
+  const konpoWait = (inv['梱包作業'] || 0) + (inv['梱包待ち'] || 0) + (inv['梱包中'] || 0) + (inv['入金確認済み'] || 0);
 
   const maxItems = 200;
 
@@ -4672,7 +4672,7 @@ async function handleTorihikiPhoto(event) {
           image: dataUrl,
           step: 'receipt',
           context: {
-            task: 'このヤフオクの画面のスクリーンショットから情報を読み取ってJSON形式で返してください。複数件ある場合はitemsという配列で返してください。1件の場合もitemsに入れてください: {"items":[{"itemName":"商品名","status":"ステータス（落札済み/入金待ち/入金確認済み/梱包作業/発送済み/完了のいずれか）","buyer":"落札者ID","price":金額数値,"shipping":送料数値（わかれば0）,"mgmtNum":"管理番号（タイトルにあれば）","statusDetail":"画面から読み取った状態の説明"}]}'
+            task: 'このヤフオクの画面のスクリーンショットから情報を読み取ってJSON形式で返してください。複数件ある場合はitemsという配列で返してください。1件の場合もitemsに入れてください: {"items":[{"itemName":"商品名","status":"ステータス（落札済み/連絡待ち/送料連絡済み/入金待ち/入金確認済み/梱包待ち/発送済み/受取確認/完了のいずれか）","buyer":"落札者ID","price":金額数値,"shipping":送料数値（わかれば0）,"mgmtNum":"管理番号（タイトルにあれば）","statusDetail":"画面から読み取った状態の説明"}]}'
           },
         }),
       });
@@ -4705,10 +4705,16 @@ async function handleTorihikiPhoto(event) {
 function renderTorihikiResults(items) {
   const statusColors = {
     '落札済み': 'background:rgba(197,162,88,0.2);color:#C5A258',
+    '連絡待ち': 'background:rgba(255,149,0,0.2);color:#FF9500',
+    '送料連絡済み': 'background:rgba(255,149,0,0.2);color:#FF9500',
     '入金待ち': 'background:rgba(255,59,48,0.2);color:#FF3B30',
     '入金確認済み': 'background:rgba(0,107,63,0.2);color:#4CD964',
+    '梱包待ち': 'background:rgba(0,122,255,0.2);color:#007AFF',
     '梱包作業': 'background:rgba(0,122,255,0.2);color:#007AFF',
+    '梱包中': 'background:rgba(0,122,255,0.2);color:#007AFF',
+    '梱包完了': 'background:rgba(0,107,63,0.2);color:#4CD964',
     '発送済み': 'background:rgba(0,107,63,0.2);color:#4CD964',
+    '受取確認': 'background:rgba(142,142,147,0.2);color:#8E8E93',
     '完了': 'background:rgba(142,142,147,0.2);color:#8E8E93',
   };
 
@@ -4769,8 +4775,9 @@ function renderTorihikiResults(items) {
 // ステータスの正しい順序（数字が大きい方が進んでいる）
 const STATUS_ORDER = {
   '分荷確定': 1, '撮影待ち': 2, '出品待ち': 3, '出品': 3, '出品中': 4, '出品作業中': 4,
-  '落札済み': 5, '入金待ち': 6, '入金確認済み': 7, '梱包作業': 8, '梱包待ち': 8,
-  '発送済み': 9, '出荷済': 9, '出荷済み': 9, '完了': 10,
+  '落札済み': 5, '連絡待ち': 6, '送料連絡済み': 7, '入金待ち': 8, '入金確認済み': 9,
+  '梱包待ち': 10, '梱包作業': 10, '梱包中': 11, '梱包完了': 12,
+  '発送済み': 13, '出荷済': 13, '出荷済み': 13, '受取確認': 14, '完了': 15,
 };
 
 async function confirmTorihikiUpdate(data, idx) {
@@ -4860,8 +4867,11 @@ async function checkItemStatus() {
 
   const statusColors = {
     '分荷確定': '#006B3F', '撮影待ち': '#006B3F', '出品待ち': '#C5A258', '出品': '#C5A258',
-    '出品中': '#007AFF', '出品作業中': '#007AFF', '落札済み': '#FF9500', '入金待ち': '#FF3B30',
-    '入金確認済み': '#4CD964', '梱包作業': '#007AFF', '発送済み': '#4CD964', '出荷済': '#8E8E93', '完了': '#8E8E93',
+    '出品中': '#007AFF', '出品作業中': '#007AFF', '落札済み': '#FF9500',
+    '連絡待ち': '#FF9500', '送料連絡済み': '#FF9500',
+    '入金待ち': '#FF3B30', '入金確認済み': '#4CD964',
+    '梱包待ち': '#007AFF', '梱包作業': '#007AFF', '梱包中': '#007AFF', '梱包完了': '#4CD964',
+    '発送済み': '#4CD964', '出荷済': '#8E8E93', '受取確認': '#8E8E93', '完了': '#8E8E93',
   };
 
   resultEl.innerHTML = data.map(i => {
