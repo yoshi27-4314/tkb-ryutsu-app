@@ -128,6 +128,9 @@ function switchStatusTab(status) {
   currentStatusTab = status;
   document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
   event.target.closest('.status-tab').classList.add('active');
+  // 発送準備タブの場合はCSV出力ボタンを表示
+  const csvSection = document.getElementById('csvExportSection');
+  if (csvSection) csvSection.style.display = status === '発送準備' ? '' : 'none';
   renderStockListFromDB();
 }
 
@@ -386,6 +389,61 @@ function closeListingWork() {
   listingStartTime = null;
   listingMgmtNum = null;
   document.getElementById('itemDetailOverlay').classList.remove('open');
+}
+
+// ====== E飛伝CSV出力 ======
+function exportEhidenCSV() {
+  // 発送準備の商品を取得
+  const shippingItems = dbItems.filter(i => i.status === '梱包完了' || i.status === '発送待ち');
+
+  if (shippingItems.length === 0) {
+    showToast('発送準備の商品がありません');
+    return;
+  }
+
+  const SENDER = CONFIG.SENDER || {};
+
+  // CSV生成（Shift-JIS対応はBOM付きUTF-8で代替。E飛伝WebはUTF-8も対応）
+  const rows = shippingItems.map(i => {
+    // 届け先情報はDB上にないので空欄（E飛伝側で手入力 or 後で編集）
+    return [
+      '',                    // お届け先郵便番号
+      '',                    // お届け先住所1
+      '',                    // お届け先住所2
+      '',                    // お届け先住所3
+      '',                    // お届け先名称1（落札者名）
+      '',                    // お届け先名称2
+      '',                    // お届け先電話番号
+      SENDER.zip,            // ご依頼主郵便番号
+      SENDER.addr1,          // ご依頼主住所1
+      SENDER.addr2,          // ご依頼主住所2
+      SENDER.addr3,          // ご依頼主住所3
+      SENDER.name1,          // ご依頼主名称1
+      SENDER.name2,          // ご依頼主名称2
+      SENDER.tel,            // ご依頼主電話番号
+      (i.product_name || '商品').slice(0, 30), // 品名1
+      i.mgmt_num || '',      // 品名2（管理番号）
+      '',                    // 配達日
+      '',                    // 配達時間帯
+      '1',                   // 個数
+      '',                    // 重量
+      '0',                   // 便種（0:元払）
+      i.mgmt_num || '',      // 備考（管理番号）
+    ].map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',');
+  });
+
+  const header = '"お届け先郵便番号","お届け先住所1","お届け先住所2","お届け先住所3","お届け先名称1","お届け先名称2","お届け先電話番号","ご依頼主郵便番号","ご依頼主住所1","ご依頼主住所2","ご依頼主住所3","ご依頼主名称1","ご依頼主名称2","ご依頼主電話番号","品名1","品名2","配達日","配達時間帯","個数","重量","便種","備考"';
+
+  const csv = '\uFEFF' + header + '\r\n' + rows.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `e飛伝_${new Date().toISOString().slice(0,10)}_${shippingItems.length}件.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  showToast(`📄 ${shippingItems.length}件のCSVをダウンロードしました`);
 }
 
 // ====== 梱包作業 ======

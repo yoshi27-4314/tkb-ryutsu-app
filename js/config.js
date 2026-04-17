@@ -59,6 +59,15 @@ const CONFIG = {
     return String(now.getFullYear()).slice(2) + String(now.getMonth() + 1).padStart(2, '0');
   },
 
+  // E飛伝CSV出力用 依頼主情報
+  SENDER: {
+    zip: '5008833',       // TODO: 正しい郵便番号に修正
+    addr1: '岐阜県岐阜市神田町',  // TODO: 正しい住所に修正
+    addr2: '',
+    name1: '株式会社テイクバック',
+    tel: '058-000-0000',  // TODO: 正しい番号に修正
+  },
+
   // 現在の在庫ステータス（Monday.comから取得 2026-04-15）
   // importMondayData実行後はスプレッドシートから自動取得に切替
   CURRENT_INVENTORY: {
