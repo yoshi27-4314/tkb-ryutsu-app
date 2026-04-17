@@ -28,6 +28,8 @@ async function loadItemsFromDB() {
     const { data, error } = await fegDb.from('tkb_items').select('*').order('priority_score', { ascending: false, nullsFirst: false });
     if (error) { console.error('DB読み込みエラー:', error); return; }
     dbItems = data || [];
+    // ローカルキャッシュを更新（オフライン用）
+    try { localStorage.setItem('f8_db_items_cache', JSON.stringify(dbItems)); } catch(e) {}
     // 30分以上前のロックを自動解除
     const now = new Date();
     dbItems.forEach(async (item) => {
@@ -46,6 +48,14 @@ async function loadItemsFromDB() {
   } catch (err) {
     console.error('DB接続エラー:', err);
     showToast('⚠️ データベースに接続できません。しばらくしてから再試行してください。');
+    // ローカルキャッシュがあれば表示
+    const cached = localStorage.getItem('f8_db_items_cache');
+    if (cached) {
+      dbItems = JSON.parse(cached);
+      renderStockListFromDB();
+      updateStatusTabCounts();
+      showToast('⚠️ オフラインモード（キャッシュデータを表示中）');
+    }
   }
 }
 
@@ -138,9 +148,9 @@ function calcPriorityScore(item) {
 // ステータスタブ切り替え
 function switchStatusTab(status) {
   currentStatusTab = status;
-  document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
-  event.target.closest('.status-tab').classList.add('active');
-  // 発送準備タブの場合はCSV出力ボタンを表示
+  document.querySelectorAll('.status-tab').forEach(t => {
+    t.classList.toggle('active', t.textContent.includes(status) || (status === 'all' && t.textContent.includes('全件')));
+  });
   const csvSection = document.getElementById('csvExportSection');
   if (csvSection) csvSection.style.display = status === '発送準備' ? '' : 'none';
   renderStockListFromDB();
@@ -637,14 +647,21 @@ function saveDraft() {
   }
 
   const drafts = JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]');
+  // 写真データは容量が大きいので下書きには含めない
+  const draftItem = { ...currentItem };
+  delete draftItem.photo1;
+  delete draftItem.photo2;
+  delete draftItem.photo3;
+  delete draftItem.photo4;
+  delete draftItem.photo5;
   const draft = {
     id: 'draft_' + Date.now(),
-    item: { ...currentItem },
+    item: draftItem,
     category: currentCategory,
     bundle: currentBundle,
     step: cameraStep,
     photos: multiPhotos.map(p => p ? true : false), // 写真データは重いのでフラグだけ
-    photoData: multiPhotos, // 実際の写真データ
+    photoData: null, // 写真データは容量対策で保存しない
     staffName: currentUser.name,
     savedAt: new Date().toISOString(),
   };
@@ -2315,7 +2332,7 @@ async function finalizeAcceptJudgment() {
       staff_id: currentUser.name,
       needs_approval: currentItem.needsApproval ? 'はい' : 'いいえ',
       approval_reason: currentItem.approvalReason || '',
-      status: '分荷確定',
+      status: '撮影待ち',
       timestamp: formatTimestamp(),
     });
 
@@ -4154,6 +4171,9 @@ function approveItem() {
     timestamp: formatTimestamp(),
   });
 
+  // Supabase DBも更新
+  updateItemStatus(selectedItem.mgmtNum, '出品待ち', {});
+
   showToast('✅ ' + selectedItem.mgmtNum + ' 承認しました');
   closeApproval();
   fetchNotifications();
@@ -4184,6 +4204,9 @@ function rejectItem() {
     comment: comment,
     timestamp: formatTimestamp(),
   });
+
+  // Supabase DBも更新
+  updateItemStatus(selectedItem.mgmtNum, '確認/相談', {});
 
   showToast('↩️ ' + selectedItem.mgmtNum + ' 差し戻しました');
   closeApproval();
@@ -4945,9 +4968,9 @@ async function confirmTorihikiUpdate(data, idx) {
 
   // Supabase DBも更新
   if (data.mgmtNum) {
-    updateItemStatus(data.mgmtNum, data.status, {
-      estimated_price_max: data.price || undefined,
-    });
+    const extra = { estimated_price_max: data.price || undefined };
+    if (data.buyer) extra.listing_description = (data.buyer || '') + '|' + (data.shipping || 0);
+    updateItemStatus(data.mgmtNum, data.status, extra);
   }
 
   // カードを更新済み表示に

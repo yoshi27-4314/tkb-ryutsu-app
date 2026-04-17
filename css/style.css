@@ -21,7 +21,7 @@ body {
   font-family: 'Noto Sans JP', sans-serif;
   background: var(--bg);
   color: var(--text);
-  max-width: 480px;
+  max-width: 768px;
   margin: 0 auto;
   min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
@@ -1438,4 +1438,15 @@ body[data-theme="female"] {
 }
 .torihiki-btn-group {
   display: flex; gap: 8px; margin-top: 16px;
+}
+
+@media (min-width: 769px) {
+  body { max-width: 1024px; }
+  .photo-grid { grid-template-columns: repeat(5, 1fr); }
+  .location-grid { grid-template-columns: repeat(4, 1fr); }
+  .location-grid-small { grid-template-columns: repeat(7, 1fr); }
+  .status-tabs { flex-wrap: wrap; }
+  .listing-work-card { padding: 20px; }
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .quick-actions { grid-template-columns: repeat(4, 1fr); }
 }

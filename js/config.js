@@ -126,6 +126,38 @@ const CONFIG = {
     },
   },
 
+  // ステータス名称定義（全箇所でこの定数を使う）
+  STATUS: {
+    RECEIVED: '受取済み',
+    JUDGED: '分荷確定',
+    PHOTO_WAIT: '撮影待ち',
+    LIST_WAIT: '出品待ち',
+    LISTING: '出品中',
+    LISTING_WORK: '出品作業中',
+    SOLD: '落札済み',
+    CONTACT_WAIT: '連絡待ち',
+    SHIPPING_NOTIFIED: '送料連絡済み',
+    PAYMENT_WAIT: '入金待ち',
+    PAYMENT_CONFIRMED: '入金確認済み',
+    PACK_WAIT: '梱包待ち',
+    PACKING: '梱包中',
+    PACK_DONE: '梱包完了',
+    SHIPPED: '発送済み',
+    RECEIVED_CONFIRM: '受取確認',
+    COMPLETE: '完了',
+    // 特別
+    ISSUE_REPORTED: '商品問題連絡',
+    CARRIER_CONSULT: '運送会社相談中',
+    COLLECTING: '商品回収中',
+    RETURNING: '返送中',
+    INSPECTING: '商品確認中',
+    CANCEL_PROCESS: 'キャンセル処理',
+    REFUND_PROCESS: '返金処理',
+    CARRIER_CLAIM: '運送会社請求中',
+    CARRIER_PAID: '運送会社入金確認',
+    CANCELLED: 'キャンセル',
+  },
+
   // アプリバージョン
   APP_VERSION: '2026.04.15',
 
