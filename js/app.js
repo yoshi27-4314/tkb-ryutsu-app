@@ -133,18 +133,22 @@ function switchStatusTab(status) {
 
 // ステータスタブの件数更新
 function updateStatusTabCounts() {
-  const counts = { '出品待ち': 0, '出品中': 0, '撮影待ち': 0, '落札済み': 0, all: 0 };
+  const counts = { '出品待ち': 0, '出品中': 0, '撮影待ち': 0, '落札済み': 0, '梱包待ち': 0, '発送準備': 0, all: 0 };
   dbItems.forEach(i => {
     counts.all++;
-    if (i.status === '出品待ち' || i.status === '分荷確定') counts['出品待ち']++;
+    if (i.status === '出品待ち' || i.status === '分荷確定' || i.status === '出品') counts['出品待ち']++;
     else if (i.status === '出品中' || i.status === '出品作業中') counts['出品中']++;
     else if (i.status === '撮影待ち') counts['撮影待ち']++;
     else if (i.status === '落札済み' || i.status === '入金待ち' || i.status === '入金確認済み') counts['落札済み']++;
+    else if (i.status === '梱包作業' || i.status === '梱包待ち') counts['梱包待ち']++;
+    else if (i.status === '梱包完了' || i.status === '発送待ち') counts['発送準備']++;
   });
   document.getElementById('tabCountWaiting').textContent = counts['出品待ち'];
   document.getElementById('tabCountListing').textContent = counts['出品中'];
   document.getElementById('tabCountPhoto').textContent = counts['撮影待ち'];
   document.getElementById('tabCountSold').textContent = counts['落札済み'];
+  document.getElementById('tabCountPacking').textContent = counts['梱包待ち'];
+  document.getElementById('tabCountShipping').textContent = counts['発送準備'];
   document.getElementById('tabCountAll').textContent = counts.all;
 }
 
@@ -176,10 +180,12 @@ function renderStockListFromDB() {
   // ステータスフィルター
   if (currentStatusTab !== 'all') {
     items = items.filter(i => {
-      if (currentStatusTab === '出品待ち') return i.status === '出品待ち' || i.status === '分荷確定';
+      if (currentStatusTab === '出品待ち') return i.status === '出品待ち' || i.status === '分荷確定' || i.status === '出品';
       if (currentStatusTab === '出品中') return i.status === '出品中' || i.status === '出品作業中';
       if (currentStatusTab === '撮影待ち') return i.status === '撮影待ち';
       if (currentStatusTab === '落札済み') return i.status === '落札済み' || i.status === '入金待ち' || i.status === '入金確認済み';
+      if (currentStatusTab === '梱包待ち') return i.status === '梱包作業' || i.status === '梱包待ち';
+      if (currentStatusTab === '発送準備') return i.status === '梱包完了' || i.status === '発送待ち';
       return true;
     });
   }
@@ -218,10 +224,22 @@ function renderStockListFromDB() {
 
     // ステータスに応じたアクションボタン
     let actionBtn = '';
-    if ((i.status === '出品待ち' || i.status === '分荷確定') && !isLocked) {
+    if ((i.status === '出品待ち' || i.status === '分荷確定' || i.status === '出品') && !isLocked) {
       actionBtn = `<button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); startListing('${i.mgmt_num}')">▶ 出品開始</button>`;
     } else if (i.status === '出品作業中' && i.locked_by === (currentUser?.name || '')) {
       actionBtn = `<button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); openListingWork('${i.mgmt_num}')">📝 出品画面</button>`;
+    } else if (i.status === '梱包作業' || i.status === '梱包待ち') {
+      actionBtn = `
+        <button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); startPacking('${i.mgmt_num}')">📦 梱包開始</button>
+      `;
+    } else if (i.status === '梱包中') {
+      actionBtn = `
+        <button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); completePacking('${i.mgmt_num}')">✅ 梱包完了</button>
+      `;
+    } else if (i.status === '梱包完了' || i.status === '発送待ち') {
+      actionBtn = `
+        <button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); openItemDetailFromDB('${i.mgmt_num}')">🚚 発送登録</button>
+      `;
     }
 
     return `
@@ -364,6 +382,52 @@ function closeListingWork() {
   listingStartTime = null;
   listingMgmtNum = null;
   document.getElementById('itemDetailOverlay').classList.remove('open');
+}
+
+// ====== 梱包作業 ======
+async function startPacking(mgmtNum) {
+  const item = dbItems.find(i => i.mgmt_num === mgmtNum);
+  if (!item) return;
+
+  // ロック
+  const ok = await lockItem(mgmtNum, currentUser.name);
+  if (!ok) return;
+
+  await updateItemStatus(mgmtNum, '梱包中', { locked_by: currentUser.name });
+  sendToGAS({
+    action: 'status_update',
+    mgmtNum: mgmtNum,
+    itemName: item.product_name || '',
+    status: '梱包中',
+    staff: currentUser.name,
+    timestamp: formatTimestamp(),
+  });
+
+  showToast(`📦 ${mgmtNum} 梱包開始`);
+  loadItemsFromDB();
+}
+
+async function completePacking(mgmtNum) {
+  const item = dbItems.find(i => i.mgmt_num === mgmtNum);
+  if (!item) return;
+
+  await fegDb.from('tkb_items').update({
+    status: '梱包完了',
+    locked_by: null,
+    locked_at: null,
+  }).eq('mgmt_num', mgmtNum);
+
+  sendToGAS({
+    action: 'status_update',
+    mgmtNum: mgmtNum,
+    itemName: item.product_name || '',
+    status: '梱包完了',
+    staff: currentUser.name,
+    timestamp: formatTimestamp(),
+  });
+
+  showToast(`✅ ${mgmtNum} 梱包完了 → 発送準備へ`);
+  loadItemsFromDB();
 }
 
 function copyToClip(id) {
