@@ -4534,12 +4534,20 @@ function submitSales() {
 
   sendToGAS(payload);
 
+  // Supabase DBも更新（送料0=未確定として登録可能）
+  if (payload.mgmtNum) {
+    updateItemStatus(payload.mgmtNum, '落札済み', {
+      estimated_price_max: payload.price,
+    });
+  }
+
   // ローカル保存
   const salesData = JSON.parse(localStorage.getItem('f8_sales') || '[]');
-  salesData.unshift({ ...payload, createdAt: new Date().toISOString() });
+  salesData.unshift({ ...payload, createdAt: new Date().toISOString(), shippingConfirmed: payload.shipping > 0 });
   localStorage.setItem('f8_sales', JSON.stringify(salesData));
 
-  showToast('売上を登録しました');
+  const shippingMsg = payload.shipping > 0 ? '' : '（送料未確定 → 後で取引ナビから更新可能）';
+  showToast('売上を登録しました' + shippingMsg);
   closeSalesModal();
 }
 
@@ -4565,7 +4573,7 @@ async function handleTorihikiPhoto(event) {
           image: dataUrl,
           step: 'receipt',
           context: {
-            task: 'このヤフオク取引ナビのスクリーンショットから取引状態を読み取ってJSON形式で返してください: {"itemName":"商品名","status":"ステータス（落札済み/入金待ち/入金確認済み/梱包作業/発送済み/完了のいずれか）","buyer":"落札者ID","price":金額数値,"shipping":送料数値（わかれば）,"mgmtNum":"管理番号（タイトルにあれば）","statusDetail":"画面から読み取った状態の説明"}'
+            task: 'このヤフオクの画面のスクリーンショットから情報を読み取ってJSON形式で返してください。複数件ある場合はitemsという配列で返してください。1件の場合もitemsに入れてください: {"items":[{"itemName":"商品名","status":"ステータス（落札済み/入金待ち/入金確認済み/梱包作業/発送済み/完了のいずれか）","buyer":"落札者ID","price":金額数値,"shipping":送料数値（わかれば0）,"mgmtNum":"管理番号（タイトルにあれば）","statusDetail":"画面から読み取った状態の説明"}]}'
           },
         }),
       });
@@ -4575,7 +4583,13 @@ async function handleTorihikiPhoto(event) {
 
       if (result.success && result.judgment) {
         const j = result.judgment;
-        renderTorihikiResult(j);
+        // 複数件対応
+        if (j.items && Array.isArray(j.items)) {
+          renderTorihikiResults(j.items);
+        } else {
+          // 旧形式（1件）互換
+          renderTorihikiResults([j]);
+        }
       } else {
         showToast('読み取りに失敗しました');
       }
@@ -4588,7 +4602,8 @@ async function handleTorihikiPhoto(event) {
   event.target.value = '';
 }
 
-function renderTorihikiResult(data) {
+// 複数件表示
+function renderTorihikiResults(items) {
   const statusColors = {
     '落札済み': 'background:rgba(197,162,88,0.2);color:#C5A258',
     '入金待ち': 'background:rgba(255,59,48,0.2);color:#FF3B30',
@@ -4597,48 +4612,62 @@ function renderTorihikiResult(data) {
     '発送済み': 'background:rgba(0,107,63,0.2);color:#4CD964',
     '完了': 'background:rgba(142,142,147,0.2);color:#8E8E93',
   };
-  const badgeStyle = statusColors[data.status] || 'background:rgba(142,142,147,0.2);color:#8E8E93';
 
-  const html = `
-    <div class="torihiki-result-card">
-      <div class="torihiki-result-row">
-        <span class="torihiki-result-label">商品名</span>
-        <span class="torihiki-result-value">${escapeHtml(data.itemName || '不明')}</span>
+  const header = items.length > 1 ? `<p style="color:var(--gold); font-weight:600; margin-bottom:8px;">📋 ${items.length}件読み取りました</p>` : '';
+
+  const html = header + items.map((data, idx) => {
+    const badgeStyle = statusColors[data.status] || 'background:rgba(142,142,147,0.2);color:#8E8E93';
+    const dataJson = JSON.stringify(data).replace(/"/g, '&quot;');
+    return `
+      <div class="torihiki-result-card" id="torihikiCard${idx}">
+        <div class="torihiki-result-row">
+          <span class="torihiki-result-label">商品名</span>
+          <span class="torihiki-result-value">${escapeHtml(data.itemName || '不明')}</span>
+        </div>
+        <div class="torihiki-result-row">
+          <span class="torihiki-result-label">ステータス</span>
+          <span class="torihiki-status-badge" style="${badgeStyle}">${escapeHtml(data.status || '不明')}</span>
+        </div>
+        ${data.mgmtNum ? `<div class="torihiki-result-row">
+          <span class="torihiki-result-label">管理番号</span>
+          <span class="torihiki-result-value">${escapeHtml(data.mgmtNum)}</span>
+        </div>` : ''}
+        <div class="torihiki-result-row">
+          <span class="torihiki-result-label">金額</span>
+          <span class="torihiki-result-value">¥${Number(data.price || 0).toLocaleString()}</span>
+        </div>
+        <div class="torihiki-result-row">
+          <span class="torihiki-result-label">送料</span>
+          <span class="torihiki-result-value">${data.shipping ? '¥' + Number(data.shipping).toLocaleString() : '<span style="color:var(--gold)">未確定（後で更新可）</span>'}</span>
+        </div>
+        ${data.buyer ? `<div class="torihiki-result-row">
+          <span class="torihiki-result-label">落札者</span>
+          <span class="torihiki-result-value">${escapeHtml(data.buyer)}</span>
+        </div>` : ''}
+        ${data.statusDetail ? `<div style="margin-top:8px; padding:8px; background:rgba(255,255,255,0.03); border-radius:8px; font-size:12px; color:var(--sub);">
+          💡 ${escapeHtml(data.statusDetail)}
+        </div>` : ''}
+        <div class="torihiki-btn-group">
+          <button class="btn btn-primary" style="flex:1;" onclick="confirmTorihikiUpdate(${dataJson}, ${idx})">✅ 更新</button>
+          <button class="btn btn-outline" style="flex:1;" onclick="skipTorihikiItem(${idx})">⏭ スキップ</button>
+        </div>
       </div>
-      <div class="torihiki-result-row">
-        <span class="torihiki-result-label">ステータス</span>
-        <span class="torihiki-status-badge" style="${badgeStyle}">${escapeHtml(data.status || '不明')}</span>
-      </div>
-      ${data.mgmtNum ? `<div class="torihiki-result-row">
-        <span class="torihiki-result-label">管理番号</span>
-        <span class="torihiki-result-value">${escapeHtml(data.mgmtNum)}</span>
-      </div>` : ''}
-      ${data.price ? `<div class="torihiki-result-row">
-        <span class="torihiki-result-label">金額</span>
-        <span class="torihiki-result-value">¥${Number(data.price).toLocaleString()}</span>
-      </div>` : ''}
-      ${data.shipping ? `<div class="torihiki-result-row">
-        <span class="torihiki-result-label">送料</span>
-        <span class="torihiki-result-value">¥${Number(data.shipping).toLocaleString()}</span>
-      </div>` : ''}
-      ${data.buyer ? `<div class="torihiki-result-row">
-        <span class="torihiki-result-label">落札者</span>
-        <span class="torihiki-result-value">${escapeHtml(data.buyer)}</span>
-      </div>` : ''}
-      ${data.statusDetail ? `<div style="margin-top:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:8px; font-size:12px; color:var(--sub);">
-        💡 ${escapeHtml(data.statusDetail)}
-      </div>` : ''}
-      <div class="torihiki-btn-group">
-        <button class="btn btn-primary" style="flex:1;" onclick="confirmTorihikiUpdate(${JSON.stringify(data).replace(/"/g, '&quot;')})">✅ ステータス更新</button>
-        <button class="btn btn-outline" style="flex:1;" onclick="resetTorihiki()">📸 別の取引</button>
-      </div>
-    </div>
-  `;
-  document.getElementById('torihikiResult').innerHTML = html;
+    `;
+  }).join('');
+
+  const footer = `<div class="torihiki-btn-group" style="margin-top:12px;">
+    <button class="btn btn-primary" style="flex:1;" onclick="confirmAllTorihiki()">✅ 全件まとめて更新</button>
+    <button class="btn btn-outline" style="flex:1;" onclick="resetTorihiki()">📋 別のスクショ</button>
+  </div>`;
+
+  document.getElementById('torihikiResult').innerHTML = html + footer;
   document.getElementById('torihikiResult').style.display = '';
+
+  // 全件更新用にデータを保持
+  window._torihikiItems = items;
 }
 
-function confirmTorihikiUpdate(data) {
+function confirmTorihikiUpdate(data, idx) {
   const payload = {
     action: 'status_update',
     mgmtNum: data.mgmtNum || '',
@@ -4651,13 +4680,46 @@ function confirmTorihikiUpdate(data) {
     timestamp: formatTimestamp(),
   };
   sendToGAS(payload);
+
+  // Supabase DBも更新
+  if (data.mgmtNum) {
+    updateItemStatus(data.mgmtNum, data.status, {
+      estimated_price_max: data.price || undefined,
+    });
+  }
+
+  // カードを更新済み表示に
+  const card = document.getElementById('torihikiCard' + idx);
+  if (card) {
+    card.style.opacity = '0.4';
+    card.innerHTML = `<p style="text-align:center; color:var(--gold);">✅ ${escapeHtml(data.itemName || '商品')}を「${data.status}」に更新済み</p>`;
+  }
   showToast(`📋 ${data.itemName || '商品'}を「${data.status}」に更新しました`);
-  resetTorihiki();
+}
+
+function skipTorihikiItem(idx) {
+  const card = document.getElementById('torihikiCard' + idx);
+  if (card) {
+    card.style.opacity = '0.3';
+    card.innerHTML = `<p style="text-align:center; color:var(--sub);">⏭ スキップ</p>`;
+  }
+}
+
+function confirmAllTorihiki() {
+  const items = window._torihikiItems || [];
+  items.forEach((data, idx) => {
+    const card = document.getElementById('torihikiCard' + idx);
+    if (card && card.style.opacity !== '0.4' && card.style.opacity !== '0.3') {
+      confirmTorihikiUpdate(data, idx);
+    }
+  });
+  showToast(`📋 ${items.length}件をまとめて更新しました`);
 }
 
 function resetTorihiki() {
   document.getElementById('torihikiResult').style.display = 'none';
   document.getElementById('torihikiResult').innerHTML = '';
+  window._torihikiItems = null;
 }
 
 // ====== 休み希望・連絡 ======
