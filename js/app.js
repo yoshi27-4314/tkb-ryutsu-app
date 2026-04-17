@@ -1810,8 +1810,12 @@ async function analyzePhoto() {
 
     if (result.success && result.judgment) {
       const j = result.judgment;
+      // スタッフが手動修正した値を保持（AIで上書きしない）
+      const manualEdits = currentItem._manualEdits || {};
       currentItem = { ...currentItem, ...j };
-      document.getElementById('aiProductName').textContent = j.productName || '—';
+      // 手動修正があれば復元
+      Object.keys(manualEdits).forEach(k => { currentItem[k] = manualEdits[k]; });
+      document.getElementById('aiProductName').textContent = currentItem.productName || '—';
       document.getElementById('aiCategory').textContent = j.category || '—';
       document.getElementById('aiCondition').textContent = `${j.condition || '—'} ${j.conditionNote || ''}`;
       document.getElementById('aiChannel').textContent = j.channel || '—';
@@ -2152,6 +2156,19 @@ async function requestMgmtNumFromGAS() {
     return result.mgmtNum;
   }
   throw new Error('GAS採番失敗');
+}
+
+// AI判定結果の手動編集（編集内容はAI再判定で上書きされない）
+function editAiField(field, elementId, label) {
+  const current = currentItem[field] || '';
+  const newVal = prompt(label + 'を修正:', current);
+  if (newVal === null) return; // キャンセル
+  currentItem[field] = newVal;
+  // 手動修正を記録（AI再判定で上書きされないように）
+  if (!currentItem._manualEdits) currentItem._manualEdits = {};
+  currentItem._manualEdits[field] = newVal;
+  document.getElementById(elementId).textContent = newVal || '—';
+  showToast('✏️ ' + label + 'を修正しました');
 }
 
 function requestRejudge() {

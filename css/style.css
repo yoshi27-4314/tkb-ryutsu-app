@@ -1285,6 +1285,10 @@ body[data-theme="female"] {
   height: 1px; background: #2A3553; margin: 4px 16px;
 }
 
+/* ====== AI編集可能フィールド ====== */
+.ai-editable { cursor: pointer; border-bottom: 1px dashed var(--gold); }
+.ai-editable:after { content: ' ✏️'; font-size: 10px; }
+
 /* ====== ステータスタブ ====== */
 .status-tabs {
   display: flex; gap: 4px; overflow-x: auto; padding: 8px 0; -webkit-overflow-scrolling: touch;
