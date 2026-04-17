@@ -1713,6 +1713,17 @@ function selectCategory(cat) {
     currentItem.itakuType = 'shimachiyo';
   }
 
+  // 委託品の場合は受取日入力を表示
+  const receiveDateEl = document.getElementById('receiveDate');
+  if (receiveDateEl) {
+    const isItaku = (cat === 'watanabe' || cat === 'bigsports');
+    receiveDateEl.style.display = isItaku ? '' : 'none';
+    if (isItaku) {
+      const dateInput = document.getElementById('receiveDateInput');
+      if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+  }
+
   showCameraStep(1);
 
   // バーコードボタンの表示制御
@@ -2166,6 +2177,11 @@ function completeConditionCheck() {
 }
 
 async function finalizeAcceptJudgment() {
+  // 委託品の受取日を記録
+  if (currentCategory === 'watanabe' || currentCategory === 'bigsports') {
+    const receiveDate = document.getElementById('receiveDateInput')?.value;
+    if (receiveDate) currentItem.receiveDate = receiveDate;
+  }
   // 渡辺質店の場合、按分比率を確認
   if (currentCategory === 'watanabe') {
     const rate = document.getElementById('anbunRate').value;
@@ -4774,11 +4790,29 @@ function renderTorihikiResults(items) {
 
 // ステータスの正しい順序（数字が大きい方が進んでいる）
 const STATUS_ORDER = {
-  '分荷確定': 1, '撮影待ち': 2, '出品待ち': 3, '出品': 3, '出品中': 4, '出品作業中': 4,
+  '受取済み': 0, '分荷確定': 1, '撮影待ち': 2, '出品待ち': 3, '出品': 3, '出品中': 4, '出品作業中': 4,
   '落札済み': 5, '連絡待ち': 6, '送料連絡済み': 7, '入金待ち': 8, '入金確認済み': 9,
   '梱包待ち': 10, '梱包作業': 10, '梱包中': 11, '梱包完了': 12,
   '発送済み': 13, '出荷済': 13, '出荷済み': 13, '受取確認': 14, '完了': 15,
+  // 特別ステータス（事故・クレーム対応）
+  '商品問題連絡': 50, '運送会社相談中': 51, '商品回収中': 52, '返送中': 53, '商品確認中': 54,
+  'キャンセル処理': 55, '返金処理': 56, '運送会社請求中': 57, '運送会社入金確認': 58,
+  'キャンセル': 99,
 };
+
+// 全ステータスリスト（手動変更用）
+const ALL_STATUSES = [
+  { group: '通常フロー', items: [
+    '受取済み', '分荷確定', '撮影待ち', '出品待ち', '出品中',
+    '落札済み', '連絡待ち', '送料連絡済み', '入金待ち', '入金確認済み',
+    '梱包待ち', '梱包中', '梱包完了', '発送済み', '受取確認', '完了',
+  ]},
+  { group: '事故・クレーム対応', items: [
+    '商品問題連絡', '運送会社相談中', '商品回収中', '返送中', '商品確認中',
+    'キャンセル処理', '返金処理', '運送会社請求中', '運送会社入金確認',
+  ]},
+  { group: 'その他', items: ['キャンセル'] },
+];
 
 async function confirmTorihikiUpdate(data, idx) {
   // 巻き戻りチェック
@@ -4887,9 +4921,94 @@ async function checkItemStatus() {
         <div style="font-size:11px; color:var(--sub); margin-top:2px;">
           ${escapeHtml(i.channel || '')} ｜ ¥${(i.estimated_price_max || 0).toLocaleString()} ｜ ${escapeHtml(i.location || '')} ｜ ${days}日経過 ｜ ${escapeHtml(i.staff_name || '')}
         </div>
+        <button class="btn btn-outline" style="width:100%; margin-top:8px; font-size:11px; padding:4px;" onclick="openManualStatusChange('${escapeHtml(i.mgmt_num)}', '${escapeHtml(i.status || '')}')">✏️ ステータスを手動変更</button>
       </div>
     `;
   }).join('');
+}
+
+// 手動ステータス変更
+function openManualStatusChange(mgmtNum, currentStatus) {
+  let html = `
+    <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh; overflow-y:auto;">
+      <div class="modal-header">
+        <h3>${escapeHtml(mgmtNum)} ステータス変更</h3>
+        <button class="modal-close" onclick="document.getElementById('itemDetailOverlay').classList.remove('open')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--sub); margin-bottom:12px;">現在: <strong style="color:var(--gold);">${escapeHtml(currentStatus)}</strong></p>
+  `;
+
+  ALL_STATUSES.forEach(group => {
+    html += `<p style="font-size:12px; color:var(--sub); margin-top:12px; margin-bottom:4px; font-weight:600;">${escapeHtml(group.group)}</p>`;
+    html += `<div style="display:flex; flex-wrap:wrap; gap:6px;">`;
+    group.items.forEach(s => {
+      const isActive = s === currentStatus;
+      const style = isActive
+        ? 'background:var(--gold); color:#000; border-color:var(--gold);'
+        : '';
+      html += `<button class="btn btn-outline" style="font-size:11px; padding:4px 10px; ${style}" onclick="confirmManualStatusChange('${escapeHtml(mgmtNum)}', '${escapeHtml(s)}', '${escapeHtml(currentStatus)}')">${escapeHtml(s)}</button>`;
+    });
+    html += `</div>`;
+  });
+
+  html += `
+        <div class="form-group" style="margin-top:16px;">
+          <label style="font-size:12px; color:var(--sub);">変更理由（任意）</label>
+          <input type="text" id="statusChangeReason" class="search-input" placeholder="理由を入力" style="width:100%;">
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('itemDetailOverlay').innerHTML = html;
+  document.getElementById('itemDetailOverlay').classList.add('open');
+}
+
+async function confirmManualStatusChange(mgmtNum, newStatus, oldStatus) {
+  const reason = document.getElementById('statusChangeReason')?.value || '';
+
+  if (newStatus === oldStatus) {
+    showToast('同じステータスです');
+    return;
+  }
+
+  // 巻き戻り警告
+  const oldOrder = STATUS_ORDER[oldStatus] || 0;
+  const newOrder = STATUS_ORDER[newStatus] || 0;
+  if (newOrder < oldOrder && newOrder < 50) {
+    if (!confirm(`⚠️「${oldStatus}」→「${newStatus}」に戻りますが、よろしいですか？`)) return;
+  }
+
+  // DB更新
+  await updateItemStatus(mgmtNum, newStatus);
+
+  // GAS送信
+  sendToGAS({
+    action: 'status_update',
+    mgmtNum: mgmtNum,
+    status: newStatus,
+    staff: currentUser.name,
+    reason: reason,
+    timestamp: formatTimestamp(),
+  });
+
+  // Google Chat通知（特別ステータスの場合）
+  if (STATUS_ORDER[newStatus] >= 50) {
+    sendToGAS({
+      action: 'soudan',
+      staff: currentUser.name,
+      itemName: mgmtNum,
+      message: `【${newStatus}】${reason || ''}`,
+      reason: 'ステータス手動変更',
+      timestamp: formatTimestamp(),
+    });
+  }
+
+  document.getElementById('itemDetailOverlay').classList.remove('open');
+  showToast(`📋 ${mgmtNum} → ${newStatus}`);
+  checkItemStatus(); // 検索結果を再表示
+  loadItemsFromDB();
 }
 
 function resetTorihiki() {

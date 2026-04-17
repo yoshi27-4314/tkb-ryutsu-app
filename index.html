@@ -651,6 +651,13 @@
             <h3 id="step1Title">商品を撮影</h3>
             <p id="step1Desc">撮影またはバーコードスキャンで開始します</p>
           </div>
+          <!-- 委託品受取日（委託品選択時のみ表示） -->
+          <div id="receiveDate" style="display:none; margin-bottom:12px;">
+            <div class="form-group">
+              <label style="font-size:13px; color:var(--gold);">📅 受取日</label>
+              <input type="date" id="receiveDateInput" class="search-input" style="width:100%;">
+            </div>
+          </div>
           <button class="btn btn-outline" onclick="backToCategory()" style="margin-bottom:12px; font-size:13px">← 種別選択に戻る</button>
           <button class="camera-start-btn" onclick="startPhotoEntry()" style="margin-bottom:12px">
             <span class="camera-start-icon">📷</span>
