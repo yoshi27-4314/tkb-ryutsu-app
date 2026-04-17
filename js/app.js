@@ -228,11 +228,15 @@ function renderStockListFromDB() {
       actionBtn = `<button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); startListing('${i.mgmt_num}')">▶ 出品開始</button>`;
     } else if (i.status === '出品作業中' && i.locked_by === (currentUser?.name || '')) {
       actionBtn = `<button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); openListingWork('${i.mgmt_num}')">📝 出品画面</button>`;
-    } else if (i.status === '梱包作業' || i.status === '梱包待ち') {
+    } else if ((i.status === '梱包作業' || i.status === '梱包待ち') && !isLocked) {
       actionBtn = `
         <button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); startPacking('${i.mgmt_num}')">📦 梱包開始</button>
       `;
-    } else if (i.status === '梱包中') {
+    } else if ((i.status === '梱包作業' || i.status === '梱包待ち' || i.status === '梱包中') && isLocked && i.locked_by !== (currentUser?.name || '')) {
+      actionBtn = `
+        <button class="btn btn-outline" style="font-size:12px; padding:6px 12px; color:var(--gold); border-color:var(--gold);" onclick="event.stopPropagation(); takeoverPacking('${i.mgmt_num}', '${escapeHtml(i.locked_by || '')}')">🔄 引き継いで梱包する</button>
+      `;
+    } else if (i.status === '梱包中' && i.locked_by === (currentUser?.name || '')) {
       actionBtn = `
         <button class="btn btn-primary" style="font-size:12px; padding:6px 12px;" onclick="event.stopPropagation(); completePacking('${i.mgmt_num}')">✅ 梱包完了</button>
       `;
@@ -404,6 +408,37 @@ async function startPacking(mgmtNum) {
   });
 
   showToast(`📦 ${mgmtNum} 梱包開始`);
+  loadItemsFromDB();
+}
+
+async function takeoverPacking(mgmtNum, fromStaff) {
+  if (!confirm(`${fromStaff}さんから引き継いで梱包しますか？`)) return;
+
+  await fegDb.from('tkb_items').update({
+    locked_by: currentUser.name,
+    locked_at: new Date().toISOString(),
+    status: '梱包中',
+  }).eq('mgmt_num', mgmtNum);
+
+  sendToGAS({
+    action: 'status_update',
+    mgmtNum: mgmtNum,
+    status: '梱包中',
+    staff: currentUser.name,
+    timestamp: formatTimestamp(),
+  });
+
+  // Google Chat通知
+  sendToGAS({
+    action: 'soudan',
+    staff: currentUser.name,
+    itemName: mgmtNum,
+    message: `${fromStaff}さんから梱包作業を引き継ぎました`,
+    reason: '作業引き継ぎ',
+    timestamp: formatTimestamp(),
+  });
+
+  showToast(`🔄 ${fromStaff}さんから引き継ぎました`);
   loadItemsFromDB();
 }
 

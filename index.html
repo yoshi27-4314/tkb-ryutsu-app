@@ -330,8 +330,8 @@
             <div class="form-group">
               <label>追跡番号（送り状の写真でもOK）</label>
               <input type="text" id="shippingTracking" class="search-input" placeholder="追跡番号を入力" style="width:100%">
-              <button class="btn btn-outline" onclick="scanTrackingLabel()" style="margin-top:8px; font-size:14px;">📷 送り状を撮影して読み取る</button>
-              <input type="file" id="trackingPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleTrackingPhoto(event)">
+              <button class="btn btn-outline" onclick="scanTrackingLabel()" style="margin-top:8px; font-size:14px;">📋 送り状を読み取る（撮影 / スクショ）</button>
+              <input type="file" id="trackingPhotoInput" accept="image/*" style="display:none" onchange="handleTrackingPhoto(event)">
             </div>
             <button class="btn btn-primary" onclick="completeShipping()">🚚 出荷完了</button>
           </div>
