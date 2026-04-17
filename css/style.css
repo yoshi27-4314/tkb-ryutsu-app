@@ -1285,6 +1285,11 @@ body[data-theme="female"] {
   height: 1px; background: #2A3553; margin: 4px 16px;
 }
 
+/* ====== 採寸入力 ====== */
+.size-input-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.size-input-item label { font-size: 11px; color: var(--sub); display: block; margin-bottom: 2px; }
+.size-input-item input { text-align: center; }
+
 /* ====== AI編集可能フィールド ====== */
 .ai-editable { cursor: pointer; border-bottom: 1px dashed var(--gold); }
 .ai-editable:after { content: ' ✏️'; font-size: 10px; }

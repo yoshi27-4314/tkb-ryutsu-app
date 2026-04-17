@@ -417,18 +417,18 @@ function saveWorkingSession() {
     timestamp: Date.now(),
   };
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  } catch(e) { /* sessionStorage容量超過時は無視 */ }
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch(e) { /* 容量超過時は無視 */ }
 }
 
 function restoreWorkingSession() {
   try {
-    const saved = sessionStorage.getItem(SESSION_KEY);
+    const saved = localStorage.getItem(SESSION_KEY);
     if (!saved) return false;
     const session = JSON.parse(saved);
-    // 30分以上前のデータは破棄
-    if (Date.now() - session.timestamp > 30 * 60 * 1000) {
-      sessionStorage.removeItem(SESSION_KEY);
+    // 8時間以上前のデータは破棄
+    if (Date.now() - session.timestamp > 8 * 60 * 60 * 1000) {
+      localStorage.removeItem(SESSION_KEY);
       return false;
     }
     currentItem = session.currentItem || {};
@@ -455,7 +455,7 @@ function restoreWorkingSession() {
 }
 
 function clearWorkingSession() {
-  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
 }
 
 // ====== 一時保存（下書き） ======
@@ -2319,6 +2319,14 @@ function goToStep4() {
   if (preview) preview.style.display = 'none';
   const btn = document.getElementById('locationConfirmBtn');
   if (btn) btn.style.display = 'none';
+  // AI判定サイズを表示
+  const aiSizeEl = document.getElementById('aiSizeDisplay');
+  if (aiSizeEl) aiSizeEl.textContent = currentItem.estimatedSize || '判定なし';
+  // 採寸入力をリセット
+  ['sizeHeight', 'sizeWidth', 'sizeDepth', 'sizeNote'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   showCameraStep(4);
 }
 
@@ -2377,6 +2385,26 @@ function confirmLocation() {
   const custom = document.getElementById('locationCustom').value.trim();
   const loc = buildLocationString(custom);
   if (!loc) { showToast('保管場所を選択してください'); return; }
+
+  // 実測サイズを保存
+  const h = document.getElementById('sizeHeight')?.value || '';
+  const w = document.getElementById('sizeWidth')?.value || '';
+  const d = document.getElementById('sizeDepth')?.value || '';
+  const note = document.getElementById('sizeNote')?.value || '';
+  if (h || w || d) {
+    currentItem.measuredSize = `${h}×${w}×${d}cm`;
+    currentItem.sizeHeight = h;
+    currentItem.sizeWidth = w;
+    currentItem.sizeDepth = d;
+  }
+  if (note) {
+    currentItem.measuredSize = (currentItem.measuredSize || '') + ' ' + note;
+  }
+  // 実測があればAI判定サイズを上書き
+  if (currentItem.measuredSize) {
+    currentItem.estimatedSize = currentItem.measuredSize;
+  }
+
   completeRegistration(loc);
 }
 

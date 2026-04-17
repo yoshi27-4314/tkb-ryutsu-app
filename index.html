@@ -818,7 +818,28 @@
         <button class="btn btn-outline step-back-btn" onclick="showCameraStep(3)">← 商品撮影に戻る</button>
         <div id="mgmtNumBanner4" class="mgmt-num-banner" style="display:none;"></div>
         <div class="section">
-          <h3 class="section-title">📍 保管場所を選択</h3>
+          <!-- 実測採寸（全商品共通） -->
+          <h3 class="section-title">📏 実測採寸</h3>
+          <p style="font-size:12px; color:var(--sub); margin-bottom:8px;">AI判定: <span id="aiSizeDisplay">—</span></p>
+          <div class="size-input-grid">
+            <div class="size-input-item">
+              <label>縦 (cm)</label>
+              <input type="number" id="sizeHeight" class="search-input" placeholder="縦" inputmode="numeric">
+            </div>
+            <div class="size-input-item">
+              <label>横 (cm)</label>
+              <input type="number" id="sizeWidth" class="search-input" placeholder="横" inputmode="numeric">
+            </div>
+            <div class="size-input-item">
+              <label>高さ (cm)</label>
+              <input type="number" id="sizeDepth" class="search-input" placeholder="高さ" inputmode="numeric">
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:8px;">
+            <input type="text" id="sizeNote" class="search-input" placeholder="サイズ備考（自由入力）" style="width:100%">
+          </div>
+
+          <h3 class="section-title" style="margin-top:20px;">📍 保管場所を選択</h3>
           <!-- 拠点選択 -->
           <p style="font-size:13px; color:var(--sub); margin-bottom:8px;">① 拠点</p>
           <div class="location-grid">
