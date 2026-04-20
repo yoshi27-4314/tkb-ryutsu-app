@@ -2432,14 +2432,88 @@ function editAiField(field, elementId, label) {
   showToast('✏️ ' + label + 'を修正しました');
 }
 
-function requestRejudge() {
+async function requestRejudge() {
   const reason = prompt('再判定の理由を入力してください：');
   if (reason === null) return;
   if (!reason.trim()) { showToast('理由を入力してください'); return; }
   currentItem.rejudgeReason = reason;
-  showToast('🔄 再判定します...');
-  // 1枚目の写真から再判定
-  showCameraStep(1);
+
+  const photos = multiPhotos.filter(p => p !== null);
+  if (photos.length === 0) {
+    showToast('写真がありません。撮影画面に戻ります');
+    showCameraStep(1);
+    return;
+  }
+
+  showAnalyzingOverlay('🔄 再判定中', reason);
+
+  try {
+    const response = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/takeback-judge', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': CONFIG.SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        image: photos[0],
+        images: photos,
+        step: 'judge',
+        context: { rejudgeReason: reason },
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success && result.judgment) {
+      const j = result.judgment;
+      const manualEdits = currentItem._manualEdits || {};
+      currentItem = { ...currentItem, ...j };
+      Object.keys(manualEdits).forEach(k => { currentItem[k] = manualEdits[k]; });
+      document.getElementById('aiProductName').textContent = currentItem.productName || '—';
+      document.getElementById('aiCategory').textContent = j.category || '—';
+      document.getElementById('aiCondition').textContent = `${j.condition || '—'} ${j.conditionNote || ''}`;
+      document.getElementById('aiChannel').textContent = j.channel || '—';
+      document.getElementById('aiPrice').textContent = j.estimatedPrice
+        ? `¥${j.estimatedPrice.min?.toLocaleString()}〜¥${j.estimatedPrice.max?.toLocaleString()}`
+        : '—';
+      document.getElementById('aiSize').textContent = j.estimatedSize || '—';
+      if (currentCategory === 'bigsports') {
+        document.getElementById('aiChannel').textContent = 'ビッグスポーツ';
+        currentItem.channel = 'ビッグスポーツ';
+        currentItem.channelNumber = 11;
+      } else if (currentCategory === 'watanabe') {
+        document.getElementById('aiChannel').textContent = '渡辺質店';
+        currentItem.channel = '渡辺質店';
+        currentItem.channelNumber = 10;
+      } else if (currentCategory === 'shimachiyo') {
+        document.getElementById('aiChannel').textContent = 'シマチヨ';
+        currentItem.channel = 'シマチヨ';
+        currentItem.channelNumber = 20;
+      }
+      const anbunEl = document.getElementById('anbunSection');
+      if (anbunEl) anbunEl.style.display = currentCategory === 'watanabe' ? 'block' : 'none';
+      selectBundle('single');
+      const morePhotosEl = document.getElementById('needsMorePhotosMsg');
+      if (morePhotosEl) {
+        if (j.needsMorePhotos && multiPhotos.filter(p => p).length <= 1) {
+          morePhotosEl.style.display = '';
+          morePhotosEl.innerHTML = `⚠️ ${j.morePhotosReason || '追加写真で判定精度が上がります。'}<br><button class="btn btn-outline" onclick="goBackToAddPhotos()" style="margin-top:8px; font-size:13px;">📷 写真を追加して再判定</button>`;
+        } else {
+          morePhotosEl.style.display = 'none';
+        }
+      }
+      showToast('✅ 再判定が完了しました');
+    } else if (result.error) {
+      showToast('再判定エラー: ' + result.error);
+    } else {
+      showToast('再判定結果を解析できませんでした');
+    }
+  } catch (err) {
+    console.error('再判定エラー:', err);
+    showToast('通信エラー。もう一度お試しください。');
+  } finally {
+    hideAnalyzingOverlay();
+  }
 }
 
 function consultAsano() {
