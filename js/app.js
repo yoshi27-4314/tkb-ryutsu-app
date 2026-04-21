@@ -2934,22 +2934,12 @@ function fallbackCopy(text) {
 
 // ====== Google Drive連携 ======
 async function uploadToDrive(mgmtNum) {
-  // 撮影した写真を収集
+  // 撮影した写真を収集（multiPhotos配列から取得）
   const images = [];
-  if (currentItem.photo1) {
-    images.push({ data: currentItem.photo1, name: '01_商品.jpg', mimeType: 'image/jpeg' });
-  }
-  if (currentItem.photo2) {
-    images.push({ data: currentItem.photo2, name: '02_商品.jpg', mimeType: 'image/jpeg' });
-  }
-  if (currentItem.photo3) {
-    images.push({ data: currentItem.photo3, name: '03_商品.jpg', mimeType: 'image/jpeg' });
-  }
-  if (currentItem.photo4) {
-    images.push({ data: currentItem.photo4, name: '04_商品.jpg', mimeType: 'image/jpeg' });
-  }
-  if (currentItem.photo5) {
-    images.push({ data: currentItem.photo5, name: '05_商品.jpg', mimeType: 'image/jpeg' });
+  for (let i = 0; i < multiPhotos.length; i++) {
+    if (multiPhotos[i]) {
+      images.push({ data: multiPhotos[i], name: `${String(i + 1).padStart(2, '0')}_商品.jpg`, mimeType: 'image/jpeg' });
+    }
   }
 
   if (images.length === 0) return null;
