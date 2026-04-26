@@ -3199,7 +3199,12 @@ let selectedItem = null;
 
 function openItemDetail(mgmtNum) {
   const items = getItems();
-  const item = items.find(i => i.mgmtNum === mgmtNum);
+  let item = items.find(i => i.mgmtNum === mgmtNum);
+
+  // ローカルになければ検索結果キャッシュから取得（スプレッドシート検索結果）
+  if (!item && window._lastSearchResults) {
+    item = window._lastSearchResults.find(i => i.mgmtNum === mgmtNum);
+  }
   if (!item) { showToast('商品が見つかりません'); return; }
 
   selectedItem = item;
@@ -4060,6 +4065,7 @@ async function searchStock() {
   if (results.length === 0) {
     showToast('「' + q + '」は見つかりませんでした');
   } else {
+    window._lastSearchResults = results;
     renderSearchResults(results, q);
   }
 }
