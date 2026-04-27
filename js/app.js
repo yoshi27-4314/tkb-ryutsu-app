@@ -161,12 +161,12 @@ function updateStatusTabCounts() {
   const counts = { '出品待ち': 0, '出品中': 0, '撮影待ち': 0, '落札済み': 0, '梱包待ち': 0, '発送準備': 0, all: 0 };
   dbItems.forEach(i => {
     counts.all++;
-    if (i.status === '出品待ち' || i.status === '分荷確定' || i.status === '出品') counts['出品待ち']++;
+    if (i.status === '出品待ち' || i.status === '分荷確定') counts['出品待ち']++;
     else if (i.status === '出品中' || i.status === '出品作業中') counts['出品中']++;
     else if (i.status === '撮影待ち') counts['撮影待ち']++;
-    else if (i.status === '落札済み' || i.status === '入金待ち' || i.status === '入金確認済み') counts['落札済み']++;
-    else if (i.status === '梱包作業' || i.status === '梱包待ち') counts['梱包待ち']++;
-    else if (i.status === '梱包完了' || i.status === '発送待ち') counts['発送準備']++;
+    else if (i.status === '落札済み' || i.status === '入金待ち' || i.status === '連絡待ち' || i.status === '送料連絡済み') counts['落札済み']++;
+    else if (i.status === '入金確認済み' || i.status === '梱包作業' || i.status === '梱包待ち') counts['梱包待ち']++;
+    else if (i.status === '梱包完了' || i.status === '発送待ち' || i.status === '梱包中') counts['発送準備']++;
   });
   document.getElementById('tabCountWaiting').textContent = counts['出品待ち'];
   document.getElementById('tabCountListing').textContent = counts['出品中'];
@@ -205,12 +205,12 @@ function renderStockListFromDB() {
   // ステータスフィルター
   if (currentStatusTab !== 'all') {
     items = items.filter(i => {
-      if (currentStatusTab === '出品待ち') return i.status === '出品待ち' || i.status === '分荷確定' || i.status === '出品';
+      if (currentStatusTab === '出品待ち') return i.status === '出品待ち' || i.status === '分荷確定';
       if (currentStatusTab === '出品中') return i.status === '出品中' || i.status === '出品作業中';
       if (currentStatusTab === '撮影待ち') return i.status === '撮影待ち';
-      if (currentStatusTab === '落札済み') return i.status === '落札済み' || i.status === '入金待ち' || i.status === '入金確認済み';
-      if (currentStatusTab === '梱包待ち') return i.status === '梱包作業' || i.status === '梱包待ち';
-      if (currentStatusTab === '発送準備') return i.status === '梱包完了' || i.status === '発送待ち';
+      if (currentStatusTab === '落札済み') return i.status === '落札済み' || i.status === '入金待ち' || i.status === '連絡待ち' || i.status === '送料連絡済み';
+      if (currentStatusTab === '梱包待ち') return i.status === '入金確認済み' || i.status === '梱包作業' || i.status === '梱包待ち';
+      if (currentStatusTab === '発送準備') return i.status === '梱包完了' || i.status === '発送待ち' || i.status === '梱包中';
       return true;
     });
   }
@@ -295,6 +295,8 @@ let listingMgmtNum = null;
 async function startListing(mgmtNum) {
   const ok = await lockItem(mgmtNum, currentUser.name);
   if (!ok) return;
+  // ステータスを出品作業中に変更（completeListing で出品中になる）
+  await updateItemStatus(mgmtNum, '出品作業中', { locked_by: currentUser.name });
   showToast('▶ 出品開始！');
   listingMgmtNum = mgmtNum;
   listingStartTime = Date.now();
@@ -574,7 +576,7 @@ function openItemDetailFromDB(mgmtNum) {
     channel: item.channel,
     estimatedPrice: { min: item.estimated_price_min, max: item.estimated_price_max },
     condition: item.condition,
-    estimatedSize: item.estimated_size,
+    estimatedSize: item.estimated_size || item.measured_size || '',
     location: item.location,
     status: item.status,
     shipped: item.status === '出荷済',
@@ -647,8 +649,8 @@ function saveDraft() {
   }
 
   const drafts = JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]');
-  // 写真データは容量が大きいので下書きには含めない
   const draftItem = { ...currentItem };
+  // photo1-5は別途multiPhotosで管理するのでdraftItemからは除く
   delete draftItem.photo1;
   delete draftItem.photo2;
   delete draftItem.photo3;
@@ -660,25 +662,36 @@ function saveDraft() {
     category: currentCategory,
     bundle: currentBundle,
     step: cameraStep,
-    photos: multiPhotos.map(p => p ? true : false), // 写真データは重いのでフラグだけ
-    photoData: null, // 写真データは容量対策で保存しない
+    photos: multiPhotos.map(p => p ? true : false),
+    photoData: multiPhotos.slice(), // 写真データも保存を試みる
     staffName: currentUser.name,
     savedAt: new Date().toISOString(),
   };
   drafts.unshift(draft);
-  // 最大20件
-  if (drafts.length > 20) drafts.pop();
+  // 最大10件（写真データ含むため少なめ）
+  if (drafts.length > 10) drafts.pop();
 
   try {
     localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
-    showToast('💾 一時保存しました。ホーム画面から再開できます。');
+    showToast('💾 写真付きで一時保存しました。ホーム画面から再開できます。');
     clearWorkingSession();
     resetCameraFlow();
     switchTab('home');
     renderDraftItems();
   } catch(e) {
-    // localStorageの容量超過
-    showToast('保存容量を超えました。古い下書きを削除してください。');
+    // 容量超過時は写真なしでリトライ
+    draft.photoData = null;
+    draft.photos = multiPhotos.map(p => p ? true : false);
+    try {
+      localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+      showToast('💾 一時保存しました（写真は容量超過のため保存できませんでした）');
+      clearWorkingSession();
+      resetCameraFlow();
+      switchTab('home');
+      renderDraftItems();
+    } catch(e2) {
+      showToast('保存容量を超えました。古い下書きを削除してください。');
+    }
   }
 }
 
@@ -1259,7 +1272,7 @@ function updateBottleneck(items) {
 
 function updateBottleneckUI(inv) {
   const satsueiWait = (inv['分荷確定'] || 0) + (inv['撮影待ち'] || 0);
-  const shuppinWait = (inv['出品待ち'] || 0) + (inv['出品'] || 0);
+  const shuppinWait = (inv['出品待ち'] || 0);
   const konpoWait = (inv['梱包作業'] || 0) + (inv['梱包待ち'] || 0) + (inv['梱包中'] || 0) + (inv['入金確認済み'] || 0);
 
   const maxItems = 200;
@@ -2808,6 +2821,12 @@ document.addEventListener('DOMContentLoaded', function() {
   if (customInput) {
     customInput.addEventListener('input', updateLocationPreview);
   }
+  // 在庫検索のリアルタイムフィルタ
+  const stockSearchInput = document.getElementById('stockSearch');
+  if (stockSearchInput) {
+    stockSearchInput.addEventListener('input', () => renderStockListFromDB());
+    stockSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchStock(); });
+  }
 });
 
 // ====== 登録完了 ======
@@ -4008,9 +4027,16 @@ function requestAttendanceCorrection() {
 // ====== 在庫検索 ======
 async function searchStock() {
   const q = document.getElementById('stockSearch').value.trim();
-  if (!q) return;
+  if (!q) {
+    // 検索クリア時はDB一覧を再表示
+    renderStockListFromDB();
+    return;
+  }
 
-  showAnalyzingOverlay('🔍 検索中', '14,000件以上のデータを検索しています');
+  // まずDB内の商品をフィルタ表示（即時）
+  renderStockListFromDB();
+
+  showAnalyzingOverlay('🔍 検索中', 'スプレッドシートも検索しています');
 
   // ローカルデータから検索
   const localItems = getItems();
